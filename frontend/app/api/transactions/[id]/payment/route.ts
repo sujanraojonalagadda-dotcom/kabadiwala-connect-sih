@@ -1,11 +1,35 @@
 import { db } from "@/prisma/db";
+import { getCurrentUser } from "@/lib/current-user";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const currentUser = await getCurrentUser();
+
+    if (!currentUser) {
+      return Response.json(
+        {
+          ok: false,
+          error: "Authentication required.",
+        },
+        { status: 401 },
+      );
+    }
+
     const { id } = await params;
+
+    if (!id) {
+      return Response.json(
+        {
+          ok: false,
+          error: "Transaction ID is required.",
+        },
+        { status: 400 },
+      );
+    }
+
     const body = await request.json();
 
     const amount = Number(body.amount);
@@ -37,6 +61,22 @@ export async function POST(
           error: "Transaction not found.",
         },
         { status: 404 },
+      );
+    }
+
+    const isCollector =
+      transaction.collectorId === currentUser.id;
+
+    const isRecycler =
+      transaction.recyclerId === currentUser.id;
+
+    if (!isCollector && !isRecycler) {
+      return Response.json(
+        {
+          ok: false,
+          error: "You are not authorized to record payment for this transaction.",
+        },
+        { status: 403 },
       );
     }
 

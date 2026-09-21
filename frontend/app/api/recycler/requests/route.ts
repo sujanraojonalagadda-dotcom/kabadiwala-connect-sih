@@ -1,30 +1,39 @@
 import { db } from "@/prisma/db";
+import { getCurrentUser } from "@/lib/current-user";
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url);
+    const currentUser = await getCurrentUser();
 
-    const recyclerId = searchParams.get("recyclerId")?.trim();
-
-    if (!recyclerId) {
+    if (!currentUser) {
       return Response.json(
         {
           ok: false,
-          error: "recyclerId is required.",
+          error: "Authentication required.",
         },
-        { status: 400 },
+        { status: 401 },
+      );
+    }
+
+    if (currentUser.role !== "RECYCLER") {
+      return Response.json(
+        {
+          ok: false,
+          error: "Recycler access required.",
+        },
+        { status: 403 },
       );
     }
 
     const recycler = await db.orm.public.Recycler
-      .where({ userId: recyclerId })
+      .where({ userId: currentUser.id })
       .first();
 
     if (!recycler) {
       return Response.json(
         {
           ok: false,
-          error: "Recycler not found.",
+          error: "Recycler profile not found.",
         },
         { status: 404 },
       );
@@ -41,12 +50,40 @@ export async function GET(request: Request) {
     }
 
     const requests = await db.orm.public.RecyclingRequest
-      .where({ recyclerId })
+      .where({ recyclerId: currentUser.id })
       .all();
+
+    const enrichedRequests = await Promise.all(
+      requests.map(async (requestItem) => {
+        const collector = await db.orm.public.User
+          .where({ id: requestItem.collectorId })
+          .first();
+
+        const profile = await db.orm.public.Profile
+          .where({ userId: requestItem.collectorId })
+          .first();
+
+        return {
+          ...requestItem,
+          collector: collector
+            ? {
+                id: collector.id,
+                phone: collector.phone,
+                profile: profile
+                  ? {
+                      fullName: profile.fullName,
+                      language: profile.language,
+                    }
+                  : null,
+              }
+            : null,
+        };
+      }),
+    );
 
     return Response.json({
       ok: true,
-      requests,
+      requests: enrichedRequests,
     });
   } catch (error) {
     console.error("GET RECYCLER REQUESTS ERROR:", error);

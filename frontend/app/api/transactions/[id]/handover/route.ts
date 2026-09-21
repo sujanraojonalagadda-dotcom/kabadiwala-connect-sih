@@ -1,28 +1,24 @@
 import { db } from "@/prisma/db";
+import { getCurrentUser } from "@/lib/current-user";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = await params;
+    const currentUser = await getCurrentUser();
 
-    const body = await request.json();
-
-    const actorId =
-      typeof body.actorId === "string"
-        ? body.actorId.trim()
-        : "";
-
-    if (!actorId) {
+    if (!currentUser) {
       return Response.json(
         {
           ok: false,
-          error: "actorId is required.",
+          error: "Authentication required.",
         },
-        { status: 400 },
+        { status: 401 },
       );
     }
+
+    const { id } = await params;
 
     const transaction =
       await db.orm.public.Transaction
@@ -40,8 +36,8 @@ export async function POST(
     }
 
     if (
-      transaction.collectorId !== actorId &&
-      transaction.recyclerId !== actorId
+      transaction.collectorId !== currentUser.id &&
+      transaction.recyclerId !== currentUser.id
     ) {
       return Response.json(
         {

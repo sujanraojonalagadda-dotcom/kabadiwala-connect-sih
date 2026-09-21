@@ -1,13 +1,46 @@
 import { db } from "@/prisma/db";
+import { getCurrentUser } from "@/lib/current-user";
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = await params;
-    const body = await request.json();
+    const currentUser = await getCurrentUser();
 
+    if (!currentUser) {
+      return Response.json(
+        {
+          ok: false,
+          error: "Authentication required.",
+        },
+        { status: 401 },
+      );
+    }
+
+    if (currentUser.role !== "ADMIN") {
+      return Response.json(
+        {
+          ok: false,
+          error: "Admin access required.",
+        },
+        { status: 403 },
+      );
+    }
+
+    const { id } = await params;
+
+    if (!id) {
+      return Response.json(
+        {
+          ok: false,
+          error: "Verification request ID is required.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const body = await request.json();
     const status = body.status;
 
     if (status !== "VERIFIED" && status !== "REJECTED") {

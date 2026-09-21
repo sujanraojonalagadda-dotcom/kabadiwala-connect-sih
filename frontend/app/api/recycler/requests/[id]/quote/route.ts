@@ -1,17 +1,35 @@
 import { db } from "@/prisma/db";
+import { getCurrentUser } from "@/lib/current-user";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const currentUser = await getCurrentUser();
+
+    if (!currentUser) {
+      return Response.json(
+        {
+          ok: false,
+          error: "Authentication required.",
+        },
+        { status: 401 },
+      );
+    }
+
+    if (currentUser.role !== "RECYCLER") {
+      return Response.json(
+        {
+          ok: false,
+          error: "Only recyclers can submit quotes.",
+        },
+        { status: 403 },
+      );
+    }
+
     const { id } = await params;
     const body = await request.json();
-
-    const recyclerId =
-      typeof body.recyclerId === "string"
-        ? body.recyclerId.trim()
-        : "";
 
     const amount = Number(body.amount);
 
@@ -26,16 +44,6 @@ export async function POST(
       typeof body.notes === "string"
         ? body.notes.trim()
         : null;
-
-    if (!recyclerId) {
-      return Response.json(
-        {
-          ok: false,
-          error: "recyclerId is required.",
-        },
-        { status: 400 },
-      );
-    }
 
     if (!Number.isFinite(amount) || amount <= 0) {
       return Response.json(
@@ -61,7 +69,7 @@ export async function POST(
     }
 
     const recycler = await db.orm.public.Recycler
-      .where({ userId: recyclerId })
+      .where({ userId: currentUser.id })
       .first();
 
     if (!recycler) {
@@ -99,7 +107,7 @@ export async function POST(
       );
     }
 
-    if (recyclingRequest.recyclerId !== recyclerId) {
+    if (recyclingRequest.recyclerId !== currentUser.id) {
       return Response.json(
         {
           ok: false,
@@ -113,7 +121,8 @@ export async function POST(
       return Response.json(
         {
           ok: false,
-          error: "A quote can only be submitted for a SUBMITTED request.",
+          error:
+            "A quote can only be submitted for a SUBMITTED request.",
         },
         { status: 409 },
       );

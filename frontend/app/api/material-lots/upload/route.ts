@@ -1,29 +1,40 @@
+import { getCurrentUser } from "@/lib/current-user";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 
 const BUCKET_NAME = "material-lot-photos";
 
 export async function POST(request: Request) {
   try {
-    const formData = await request.formData();
+    const currentUser = await getCurrentUser();
 
+    if (!currentUser) {
+      return Response.json(
+        {
+          ok: false,
+          error: "Authentication required.",
+        },
+        { status: 401 },
+      );
+    }
+
+    if (currentUser.role !== "COLLECTOR") {
+      return Response.json(
+        {
+          ok: false,
+          error: "Only collectors can upload material photos.",
+        },
+        { status: 403 },
+      );
+    }
+
+    const formData = await request.formData();
     const file = formData.get("file");
-    const collectorId = formData.get("collectorId");
 
     if (!(file instanceof File)) {
       return Response.json(
         {
           ok: false,
           error: "Photo file is required.",
-        },
-        { status: 400 },
-      );
-    }
-
-    if (typeof collectorId !== "string" || !collectorId.trim()) {
-      return Response.json(
-        {
-          ok: false,
-          error: "collectorId is required.",
         },
         { status: 400 },
       );
@@ -54,10 +65,9 @@ export async function POST(request: Request) {
     const extension =
       file.name.split(".").pop()?.toLowerCase() || "jpg";
 
-    const filePath = `${collectorId}/${crypto.randomUUID()}.${extension}`;
+    const filePath = `${currentUser.id}/${crypto.randomUUID()}.${extension}`;
 
     const supabase = createServerSupabaseClient();
-
     const fileBuffer = await file.arrayBuffer();
 
     const { error: uploadError } = await supabase.storage

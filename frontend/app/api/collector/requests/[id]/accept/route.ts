@@ -1,41 +1,34 @@
 import { db } from "@/prisma/db";
+import { getCurrentUser } from "@/lib/current-user";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const currentUser = await getCurrentUser();
+
+    if (!currentUser) {
+      return Response.json(
+        {
+          ok: false,
+          error: "Authentication required.",
+        },
+        { status: 401 },
+      );
+    }
+
+    if (currentUser.role !== "COLLECTOR") {
+      return Response.json(
+        {
+          ok: false,
+          error: "Only collectors can accept recycling quotes.",
+        },
+        { status: 403 },
+      );
+    }
+
     const { id } = await params;
-    const body = await request.json();
-
-    const collectorId =
-      typeof body.collectorId === "string"
-        ? body.collectorId.trim()
-        : "";
-
-    if (!collectorId) {
-      return Response.json(
-        {
-          ok: false,
-          error: "collectorId is required.",
-        },
-        { status: 400 },
-      );
-    }
-
-    const collector = await db.orm.public.User
-      .where({ id: collectorId })
-      .first();
-
-    if (!collector || collector.role !== "COLLECTOR") {
-      return Response.json(
-        {
-          ok: false,
-          error: "Collector not found.",
-        },
-        { status: 404 },
-      );
-    }
 
     const recyclingRequest =
       await db.orm.public.RecyclingRequest
@@ -52,7 +45,7 @@ export async function POST(
       );
     }
 
-    if (recyclingRequest.collectorId !== collectorId) {
+    if (recyclingRequest.collectorId !== currentUser.id) {
       return Response.json(
         {
           ok: false,
@@ -66,7 +59,8 @@ export async function POST(
       return Response.json(
         {
           ok: false,
-          error: "Only requests with a received quote can be accepted.",
+          error:
+            "Only requests with a received quote can be accepted.",
         },
         { status: 409 },
       );

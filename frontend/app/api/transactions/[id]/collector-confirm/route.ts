@@ -1,27 +1,34 @@
 import { db } from "@/prisma/db";
+import { getCurrentUser } from "@/lib/current-user";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = await params;
-    const body = await request.json();
+    const currentUser = await getCurrentUser();
 
-    const collectorId =
-      typeof body.collectorId === "string"
-        ? body.collectorId.trim()
-        : "";
-
-    if (!collectorId) {
+    if (!currentUser) {
       return Response.json(
         {
           ok: false,
-          error: "collectorId is required.",
+          error: "Authentication required.",
         },
-        { status: 400 },
+        { status: 401 },
       );
     }
+
+    if (currentUser.role !== "COLLECTOR") {
+      return Response.json(
+        {
+          ok: false,
+          error: "Only collectors can confirm collector handover.",
+        },
+        { status: 403 },
+      );
+    }
+
+    const { id } = await params;
 
     const transaction =
       await db.orm.public.Transaction
@@ -38,7 +45,7 @@ export async function POST(
       );
     }
 
-    if (transaction.collectorId !== collectorId) {
+    if (transaction.collectorId !== currentUser.id) {
       return Response.json(
         {
           ok: false,

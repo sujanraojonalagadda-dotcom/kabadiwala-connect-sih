@@ -1,22 +1,32 @@
 import { db } from "@/prisma/db";
+import { getCurrentUser } from "@/lib/current-user";
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const url = new URL(request.url);
-    const collectorId = url.searchParams.get("collectorId")?.trim();
+    const currentUser = await getCurrentUser();
 
-    if (!collectorId) {
+    if (!currentUser) {
       return Response.json(
         {
           ok: false,
-          error: "collectorId is required",
+          error: "Authentication required",
         },
-        { status: 400 },
+        { status: 401 },
+      );
+    }
+
+    if (currentUser.role !== "COLLECTOR") {
+      return Response.json(
+        {
+          ok: false,
+          error: "Only collectors can access material lots",
+        },
+        { status: 403 },
       );
     }
 
     const rows = await db.orm.public.MaterialLot
-      .where({ collectorId })
+      .where({ collectorId: currentUser.id })
       .orderBy((lot) => lot.createdAt.desc())
       .all();
 
@@ -39,12 +49,29 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const currentUser = await getCurrentUser();
 
-    const collectorId =
-      typeof body.collectorId === "string"
-        ? body.collectorId.trim()
-        : "";
+    if (!currentUser) {
+      return Response.json(
+        {
+          ok: false,
+          error: "Authentication required",
+        },
+        { status: 401 },
+      );
+    }
+
+    if (currentUser.role !== "COLLECTOR") {
+      return Response.json(
+        {
+          ok: false,
+          error: "Only collectors can create material lots",
+        },
+        { status: 403 },
+      );
+    }
+
+    const body = await request.json();
 
     const material =
       typeof body.material === "string"
@@ -57,16 +84,6 @@ export async function POST(request: Request) {
       typeof body.photoUrl === "string"
         ? body.photoUrl.trim()
         : null;
-
-    if (!collectorId) {
-      return Response.json(
-        {
-          ok: false,
-          error: "collectorId is required",
-        },
-        { status: 400 },
-      );
-    }
 
     if (!material) {
       return Response.json(
@@ -110,7 +127,7 @@ export async function POST(request: Request) {
       .insert([
         {
           id: crypto.randomUUID(),
-          collectorId,
+          collectorId: currentUser.id,
           material,
           weightKg: weightKg.toString(),
           photoUrl,

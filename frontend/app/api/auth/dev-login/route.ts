@@ -1,4 +1,8 @@
 import { db } from "@/prisma/db";
+import {
+  createDevSession,
+  DEV_SESSION_COOKIE_NAME,
+} from "@/lib/dev-session";
 
 export async function POST(request: Request) {
   try {
@@ -22,37 +26,41 @@ export async function POST(request: Request) {
       .select("id", "phone", "role")
       .first();
 
-    if (existingUser) {
-      return Response.json({
-        ok: true,
-        user: existingUser,
-        existing: true,
+    let user = existingUser;
+    let status = 200;
+
+    if (!user) {
+      user = await db.orm.public.User.create({
+        id: crypto.randomUUID(),
+        phone,
+        role: "COLLECTOR",
       });
+
+      await db.orm.public.Collector.create({
+        id: crypto.randomUUID(),
+        userId: user.id,
+      });
+
+      status = 201;
     }
 
-    const user = await db.orm.public.User.create({
-      id: crypto.randomUUID(),
-      phone,
-      role: "COLLECTOR",
-    });
+    const session = createDevSession(user.id);
 
-    await db.orm.public.Collector.create({
-      id: crypto.randomUUID(),
-      userId: user.id,
-    });
-
-    return Response.json(
+    const response = Response.json(
       {
         ok: true,
-        user: {
-          id: user.id,
-          phone: user.phone,
-          role: user.role,
-        },
-        existing: false,
+        user,
+        existing: Boolean(existingUser),
       },
-      { status: 201 },
+      { status },
     );
+
+    response.headers.append(
+      "Set-Cookie",
+      `${DEV_SESSION_COOKIE_NAME}=${session}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800`,
+    );
+
+    return response;
   } catch (error) {
     console.error("DEV LOGIN ERROR:", error);
 

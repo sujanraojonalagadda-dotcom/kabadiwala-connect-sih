@@ -1,7 +1,84 @@
 import { db } from "@/prisma/db";
+import { getCurrentUser } from "@/lib/current-user";
+
+export async function GET() {
+  try {
+    const currentUser = await getCurrentUser();
+
+    if (!currentUser) {
+      return Response.json(
+        {
+          ok: false,
+          error: "Authentication required.",
+        },
+        { status: 401 },
+      );
+    }
+
+    if (currentUser.role !== "COLLECTOR") {
+      return Response.json(
+        {
+          ok: false,
+          error: "Only collectors can view recycling requests.",
+        },
+        { status: 403 },
+      );
+    }
+
+    const requests = await db.orm.public.RecyclingRequest
+      .where({ collectorId: currentUser.id })
+      .all();
+
+    requests.sort(
+      (a, b) =>
+        new Date(String(b.createdAt)).getTime() -
+        new Date(String(a.createdAt)).getTime(),
+    );
+
+    return Response.json({
+      ok: true,
+      requests,
+    });
+  } catch (error) {
+    console.error("GET RECYCLING REQUESTS ERROR:", error);
+
+    return Response.json(
+      {
+        ok: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unable to load recycling requests.",
+      },
+      { status: 500 },
+    );
+  }
+}
 
 export async function POST(request: Request) {
   try {
+    const currentUser = await getCurrentUser();
+
+    if (!currentUser) {
+      return Response.json(
+        {
+          ok: false,
+          error: "Authentication required.",
+        },
+        { status: 401 },
+      );
+    }
+
+    if (currentUser.role !== "COLLECTOR") {
+      return Response.json(
+        {
+          ok: false,
+          error: "Only collectors can create recycling requests.",
+        },
+        { status: 403 },
+      );
+    }
+
     const body = await request.json();
 
     const materialLotId =
@@ -9,37 +86,18 @@ export async function POST(request: Request) {
         ? body.materialLotId.trim()
         : "";
 
-    const collectorId =
-      typeof body.collectorId === "string"
-        ? body.collectorId.trim()
-        : "";
-
     const recyclerId =
       typeof body.recyclerId === "string"
         ? body.recyclerId.trim()
         : "";
 
-    if (!materialLotId || !collectorId || !recyclerId) {
+    if (!materialLotId || !recyclerId) {
       return Response.json(
         {
           ok: false,
-          error: "materialLotId, collectorId, and recyclerId are required.",
+          error: "materialLotId and recyclerId are required.",
         },
         { status: 400 },
-      );
-    }
-
-    const collector = await db.orm.public.User
-      .where({ id: collectorId })
-      .first();
-
-    if (!collector || collector.role !== "COLLECTOR") {
-      return Response.json(
-        {
-          ok: false,
-          error: "Collector not found.",
-        },
-        { status: 404 },
       );
     }
 
@@ -57,7 +115,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (materialLot.collectorId !== collectorId) {
+    if (materialLot.collectorId !== currentUser.id) {
       return Response.json(
         {
           ok: false,
@@ -99,19 +157,21 @@ export async function POST(request: Request) {
       return Response.json(
         {
           ok: false,
-          error: "A request already exists for this material lot and recycler.",
+          error:
+            "A request already exists for this material lot and recycler.",
         },
         { status: 409 },
       );
     }
 
-    const recyclingRequest = await db.orm.public.RecyclingRequest.create({
-      id: crypto.randomUUID(),
-      materialLotId,
-      collectorId,
-      recyclerId,
-      status: "SUBMITTED",
-    });
+    const recyclingRequest =
+      await db.orm.public.RecyclingRequest.create({
+        id: crypto.randomUUID(),
+        materialLotId,
+        collectorId: currentUser.id,
+        recyclerId,
+        status: "SUBMITTED",
+      });
 
     return Response.json(
       {

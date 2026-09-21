@@ -71,10 +71,14 @@ export default function CollectorDashboard() {
         const data = await response.json();
 
         if (!response.ok || !data.ok) {
-          throw new Error(data.error || "Unable to load your material lots.");
+          throw new Error(
+            data.error || "Unable to load your material lots.",
+          );
         }
 
-        setLots(Array.isArray(data.materialLots) ? data.materialLots : []);
+        setLots(
+          Array.isArray(data.materialLots) ? data.materialLots : [],
+        );
       } catch (error) {
         setLotsError(
           error instanceof Error
@@ -134,7 +138,9 @@ export default function CollectorDashboard() {
       <div className="mx-auto max-w-lg px-4 py-5">
         {/* Welcome */}
         <section className="rounded-2xl bg-green-700 p-5 text-white shadow-sm">
-          <p className="text-sm text-green-100">Welcome back 👋</p>
+          <p className="text-sm text-green-100">
+            Welcome back 👋
+          </p>
 
           <h2 className="mt-1 text-2xl font-bold">
             Ready to recycle?
@@ -200,7 +206,9 @@ export default function CollectorDashboard() {
                 </p>
               </div>
 
-              <span className="text-xl text-gray-400">→</span>
+              <span className="text-xl text-gray-400">
+                →
+              </span>
             </div>
           </Link>
         </section>
@@ -240,70 +248,76 @@ export default function CollectorDashboard() {
             </div>
           )}
 
-          {!loadingLots && !lotsError && recentLots.length === 0 && (
-            <div className="rounded-2xl bg-white p-5 text-center shadow-sm ring-1 ring-gray-200">
-              <div className="text-3xl">📦</div>
-
-              <h3 className="mt-3 font-bold text-gray-900">
-                No material lots yet
-              </h3>
-
-              <p className="mt-1 text-sm leading-5 text-gray-600">
-                Create your first material lot to start building your
-                recycling history.
-              </p>
-
-              <Link
-                href="/collector/material-lot"
-                className="mt-4 inline-block rounded-xl bg-green-700 px-4 py-3 text-sm font-bold text-white"
-              >
-                Create Material Lot
-              </Link>
-            </div>
-          )}
-
-          {!loadingLots && !lotsError && recentLots.length > 0 && (
-            <div className="space-y-3">
-              {recentLots.map((lot) => (
-                <div
-                  key={lot.id}
-                  className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-green-50 text-xl">
-                      {lot.material === "E_WASTE"
-                        ? "💻"
-                        : lot.material === "PLASTIC"
-                          ? "🧴"
-                          : lot.material === "METAL"
-                            ? "🔩"
-                            : lot.material === "PAPER"
-                              ? "📄"
-                              : "📦"}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-bold text-gray-900">
-                        {formatMaterial(lot.material)}
-                      </h3>
-
-                      <p className="mt-1 text-sm text-gray-600">
-                        {Number(lot.weightKg).toFixed(1)} kg
-                      </p>
-
-                      <p className="mt-1 text-xs text-gray-400">
-                        {formatDate(lot.createdAt)}
-                      </p>
-                    </div>
-
-                    <span className="rounded-full bg-green-50 px-2.5 py-1 text-[10px] font-bold uppercase text-green-700">
-                      Recorded
-                    </span>
-                  </div>
+          {!loadingLots &&
+            !lotsError &&
+            recentLots.length === 0 && (
+              <div className="rounded-2xl bg-white p-5 text-center shadow-sm ring-1 ring-gray-200">
+                <div className="text-3xl">
+                  📦
                 </div>
-              ))}
-            </div>
-          )}
+
+                <h3 className="mt-3 font-bold text-gray-900">
+                  No material lots yet
+                </h3>
+
+                <p className="mt-1 text-sm leading-5 text-gray-600">
+                  Create your first material lot to start building
+                  your recycling history.
+                </p>
+
+                <Link
+                  href="/collector/material-lot"
+                  className="mt-4 inline-block rounded-xl bg-green-700 px-4 py-3 text-sm font-bold text-white"
+                >
+                  Create Material Lot
+                </Link>
+              </div>
+            )}
+
+          {!loadingLots &&
+            !lotsError &&
+            recentLots.length > 0 && (
+              <div className="space-y-3">
+                {recentLots.map((lot) => (
+                  <div
+                    key={lot.id}
+                    className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-green-50 text-xl">
+                        {lot.material === "E_WASTE"
+                          ? "💻"
+                          : lot.material === "PLASTIC"
+                            ? "🧴"
+                            : lot.material === "METAL"
+                              ? "🔩"
+                              : lot.material === "PAPER"
+                                ? "📄"
+                                : "📦"}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-bold text-gray-900">
+                          {formatMaterial(lot.material)}
+                        </h3>
+
+                        <p className="mt-1 text-sm text-gray-600">
+                          {Number(lot.weightKg).toFixed(1)} kg
+                        </p>
+
+                        <p className="mt-1 text-xs text-gray-400">
+                          {formatDate(lot.createdAt)}
+                        </p>
+                      </div>
+
+                      <span className="rounded-full bg-green-50 px-2.5 py-1 text-[10px] font-bold uppercase text-green-700">
+                        Recorded
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
         </section>
 
         {/* Quick Actions */}
@@ -332,7 +346,9 @@ export default function CollectorDashboard() {
                 </p>
               </div>
 
-              <span className="text-lg text-gray-400">→</span>
+              <span className="text-lg text-gray-400">
+                →
+              </span>
             </Link>
 
             {/* Earnings */}
@@ -345,19 +361,23 @@ export default function CollectorDashboard() {
               </div>
 
               <div className="min-w-0 flex-1">
-                <h3 className="font-bold text-gray-900">My Earnings</h3>
+                <h3 className="font-bold text-gray-900">
+                  My Earnings
+                </h3>
 
                 <p className="mt-1 text-sm text-gray-600">
                   View payments and earnings.
                 </p>
               </div>
 
-              <span className="text-lg text-gray-400">→</span>
+              <span className="text-lg text-gray-400">
+                →
+              </span>
             </button>
 
             {/* Transactions */}
-            <button
-              type="button"
+            <Link
+              href="/collector/requests"
               className="flex w-full items-center gap-4 rounded-2xl bg-white p-4 text-left shadow-sm ring-1 ring-gray-200 active:bg-gray-50"
             >
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-xl">
@@ -374,8 +394,10 @@ export default function CollectorDashboard() {
                 </p>
               </div>
 
-              <span className="text-lg text-gray-400">→</span>
-            </button>
+              <span className="text-lg text-gray-400">
+                →
+              </span>
+            </Link>
           </div>
         </section>
 
@@ -420,7 +442,9 @@ export default function CollectorDashboard() {
 
         {/* Language */}
         <section className="mt-6 text-center">
-          <p className="text-xs text-gray-500">Language</p>
+          <p className="text-xs text-gray-500">
+            Language
+          </p>
 
           <div className="mt-2 flex justify-center gap-5 text-sm">
             <button
@@ -454,33 +478,51 @@ export default function CollectorDashboard() {
             href="/collector"
             className="flex min-w-16 flex-col items-center gap-1 rounded-xl px-3 py-2 text-green-700"
           >
-            <span className="text-lg">🏠</span>
-            <span className="text-[11px] font-semibold">Home</span>
+            <span className="text-lg">
+              🏠
+            </span>
+
+            <span className="text-[11px] font-semibold">
+              Home
+            </span>
           </Link>
 
           <Link
             href="/collector/material-lot"
             className="flex min-w-16 flex-col items-center gap-1 rounded-xl px-3 py-2 text-gray-500"
           >
-            <span className="text-lg">📦</span>
-            <span className="text-[11px] font-medium">Lots</span>
+            <span className="text-lg">
+              📦
+            </span>
+
+            <span className="text-[11px] font-medium">
+              Lots
+            </span>
           </Link>
 
-          <button
-            type="button"
+          <a
+            href="/collector/earnings"
             className="flex min-w-16 flex-col items-center gap-1 rounded-xl px-3 py-2 text-gray-500"
           >
-            <span className="text-lg">💰</span>
-            <span className="text-[11px] font-medium">Earnings</span>
-          </button>
+            <span className="text-lg">
+              💰
+            </span>
+            <span className="text-[11px] font-medium">
+              Earnings
+            </span>
+          </a>
 
-          <button
-            type="button"
+          <a
+            href="/collector/profile"
             className="flex min-w-16 flex-col items-center gap-1 rounded-xl px-3 py-2 text-gray-500"
           >
-            <span className="text-lg">👤</span>
-            <span className="text-[11px] font-medium">Profile</span>
-          </button>
+            <span className="text-lg">
+              👤
+            </span>
+            <span className="text-[11px] font-medium">
+              Profile
+            </span>
+          </a>
         </div>
       </nav>
     </main>
