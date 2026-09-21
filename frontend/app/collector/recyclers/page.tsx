@@ -1,148 +1,143 @@
 "use client";
 
-import Link from "next/link";
+import { useEffect, useState } from "react";
 
-export default function RecyclerDiscoveryPage() {
+type Recycler = {
+  id: string;
+  userId: string;
+  businessName: string | null;
+  verificationStatus: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export default function RecyclersPage() {
+  const [recyclers, setRecyclers] = useState<Recycler[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadRecyclers() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await fetch("/api/recyclers");
+
+        if (!response.ok) {
+          throw new Error("Unable to load recyclers.");
+        }
+
+        const data = await response.json();
+
+        if (!data.ok) {
+          throw new Error(data.error || "Unable to load recyclers.");
+        }
+
+        setRecyclers(data.recyclers);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Unable to load recyclers.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadRecyclers();
+  }, []);
+
   return (
-    <main className="min-h-screen bg-gray-50 pb-8">
-
-      {/* Header */}
-      <header className="sticky top-0 z-20 border-b border-gray-200 bg-white">
-        <div className="flex items-center gap-3 px-4 py-4">
-
-          <Link
-            href="/collector"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-xl"
-          >
-            ←
-          </Link>
-
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold uppercase tracking-wider text-green-700">
-              Kabadiwala Connect
-            </p>
-
-            <h1 className="truncate text-lg font-bold text-gray-900">
-              Find Recyclers
-            </h1>
-          </div>
-
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50 text-xl">
-            📍
-          </div>
-
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-lg px-4 py-5">
-
-        {/* Material Context */}
-        <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
-
-          <div className="flex items-center gap-4">
-
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 text-2xl">
-              📦
-            </div>
-
-            <div className="min-w-0 flex-1">
-
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Recycler search
-              </p>
-
-              <h2 className="mt-1 text-lg font-bold text-gray-900">
-                Select a material lot
-              </h2>
-
-              <p className="mt-1 text-sm leading-5 text-gray-600">
-                Recycler availability will be loaded from the connected
-                backend.
-              </p>
-
-            </div>
-
-          </div>
-
-        </section>
-
-        {/* Location */}
-        <section className="mt-5 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
-
-          <div className="flex items-center gap-4">
-
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-50 text-xl">
-              📍
-            </div>
-
-            <div className="min-w-0 flex-1">
-
-              <h2 className="font-bold text-gray-900">
-                Location
-              </h2>
-
-              <p className="mt-1 text-sm leading-5 text-gray-600">
-                Your location will be used to find eligible recyclers nearby.
-              </p>
-
-            </div>
-
-          </div>
-
-          <button
-            type="button"
-            className="mt-4 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700"
-          >
-            Select Location
-          </button>
-
-        </section>
-
-        {/* Real Data State */}
-        <section className="mt-7 rounded-2xl bg-white p-6 text-center shadow-sm ring-1 ring-gray-200">
-
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-3xl">
-            ♻️
-          </div>
-
-          <h2 className="mt-4 text-lg font-bold text-gray-900">
-            No recyclers available yet
-          </h2>
-
-          <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-gray-600">
-            Recycler information will appear here once verified recycler
-            records are available in the system.
+    <main className="min-h-screen bg-[#f7f8f4] px-5 py-6">
+      <div className="mx-auto max-w-md">
+        <header className="mb-6">
+          <p className="text-sm font-medium text-green-700">
+            Kabadiwala Connect
           </p>
 
+          <h1 className="mt-1 text-2xl font-bold text-gray-900">
+            Find Recyclers
+          </h1>
+
+          <p className="mt-2 text-sm text-gray-600">
+            Connect your material lot with verified recyclers.
+          </p>
+        </header>
+
+        <section className="mb-5 rounded-2xl border border-gray-200 bg-white p-4">
+          <p className="text-sm font-medium text-gray-900">
+            Recycler availability
+          </p>
+
+          <p className="mt-1 text-sm text-gray-600">
+            Only verified recycler records from the connected database are
+            shown.
+          </p>
         </section>
 
-        {/* Backend Status */}
-        <section className="mt-5 rounded-2xl bg-yellow-50 p-4">
+        {loading && (
+          <section className="rounded-2xl border border-gray-200 bg-white p-5 text-center">
+            <p className="text-sm text-gray-600">
+              Loading verified recyclers...
+            </p>
+          </section>
+        )}
 
-          <div className="flex items-start gap-3">
+        {!loading && error && (
+          <section className="rounded-2xl border border-red-200 bg-red-50 p-5">
+            <p className="text-sm font-medium text-red-800">
+              Unable to load recyclers
+            </p>
 
-            <span className="text-xl">
-              ℹ️
-            </span>
+            <p className="mt-1 text-sm text-red-700">{error}</p>
+          </section>
+        )}
 
-            <div>
-
-              <p className="text-sm font-semibold text-yellow-900">
-                Recycler directory is not connected yet
-              </p>
-
-              <p className="mt-1 text-xs leading-5 text-yellow-800">
-                This screen will display only verified records retrieved from
-                the application backend. No placeholder recycler information
-                is being shown.
-              </p>
-
+        {!loading && !error && recyclers.length === 0 && (
+          <section className="rounded-2xl border border-gray-200 bg-white p-6 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-2xl">
+              ♻️
             </div>
 
-          </div>
+            <h2 className="mt-4 text-lg font-semibold text-gray-900">
+              No verified recyclers available yet
+            </h2>
 
-        </section>
+            <p className="mt-2 text-sm leading-6 text-gray-600">
+              Verified recycler records will appear here when they are
+              available in the system.
+            </p>
+          </section>
+        )}
 
+        {!loading && !error && recyclers.length > 0 && (
+          <section className="space-y-3">
+            {recyclers.map((recycler) => (
+              <article
+                key={recycler.id}
+                className="rounded-2xl border border-gray-200 bg-white p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="font-semibold text-gray-900">
+                      {recycler.businessName || "Verified Recycler"}
+                    </h2>
+
+                    <p className="mt-1 text-sm text-gray-600">
+                      Verified recycler
+                    </p>
+                  </div>
+
+                  <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800">
+                    Verified
+                  </span>
+                </div>
+              </article>
+            ))}
+          </section>
+        )}
       </div>
     </main>
   );
