@@ -1,0 +1,284 @@
+// use prisma-8
+enum UserRole {
+  COLLECTOR
+  RECYCLER
+  ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum MaterialCategory {
+  E_WASTE
+  PLASTIC
+  METAL
+  PAPER
+  OTHER
+}
+
+enum RequestStatus {
+  SUBMITTED
+  QUOTE_RECEIVED
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+enum TransactionStatus {
+  SCHEDULED
+  HANDOVER_INITIATED
+  COLLECTOR_CONFIRMED
+  RECYCLER_CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  RECORDED
+  FAILED
+}
+
+enum NotificationType {
+  REQUEST
+  QUOTE
+  TRANSACTION
+  PAYMENT
+  SYSTEM
+}
+
+model User {
+  id                    String                     @id @default(uuid())
+  phone                 String                     @unique
+  role                  UserRole
+  createdAt             TimestamptzString          @default(now())
+  updatedAt             temporal.updatedAtString()
+
+  profile               Profile?
+  collector             Collector?
+  recycler              Recycler?
+  materialLots          MaterialLot[]
+  collectorRequests     RecyclingRequest[]         @relation("RequestCollector")
+  recyclerRequests      RecyclingRequest[]         @relation("RequestRecycler")
+  collectorTransactions Transaction[]              @relation("TransactionCollector")
+  recyclerTransactions  Transaction[]              @relation("TransactionRecycler")
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+}
+
+model Profile {
+  id        String                     @id @default(uuid())
+  userId    String                     @unique
+  fullName  String?
+  language  String?
+  createdAt TimestamptzString          @default(now())
+  updatedAt temporal.updatedAtString()
+
+  user      User                       @relation(fields:[userId], references:[id])
+}
+
+model Collector {
+  id        String                     @id @default(uuid())
+  userId    String                     @unique
+  createdAt TimestamptzString          @default(now())
+  updatedAt temporal.updatedAtString()
+
+  user      User                       @relation(fields:[userId], references:[id])
+}
+
+model Recycler {
+  id                 String                     @id @default(uuid())
+  userId             String                     @unique
+  businessName       String?
+  verificationStatus VerificationStatus         @default(PENDING)
+  createdAt          TimestamptzString          @default(now())
+  updatedAt          temporal.updatedAtString()
+
+  user               User                       @relation(fields:[userId], references:[id])
+  acceptedMaterials  RecyclerMaterial[]
+  verification       VerificationRequest?
+}
+
+model RecyclerMaterial {
+  id         String            @id @default(uuid())
+  recyclerId String
+  material   MaterialCategory
+  createdAt  TimestamptzString @default(now())
+
+  recycler   Recycler          @relation(fields:[recyclerId], references:[id])
+
+  @@unique([recyclerId, material])
+}
+
+model VerificationRequest {
+  id          String                 @id @default(uuid())
+  recyclerId  String                 @unique
+  status      VerificationStatus     @default(PENDING)
+  submittedAt TimestamptzString      @default(now())
+  reviewedAt  TimestamptzString?
+
+  recycler    Recycler               @relation(fields:[recyclerId], references:[id])
+  documents   VerificationDocument[]
+}
+
+model VerificationDocument {
+  id                    String              @id @default(uuid())
+  verificationRequestId String
+  fileUrl               String
+  documentType          String
+  createdAt             TimestamptzString   @default(now())
+
+  verificationRequest   VerificationRequest @relation(fields:[verificationRequestId], references:[id])
+}
+
+model MaterialLot {
+  id          String                     @id @default(uuid())
+  collectorId String
+  material    MaterialCategory
+  weightKg    Decimal
+  photoUrl    String?
+  description String?
+  createdAt   TimestamptzString          @default(now())
+  updatedAt   temporal.updatedAtString()
+
+  collector   User                       @relation(fields:[collectorId], references:[id])
+  requests    RecyclingRequest[]
+  aiResults   AIResult[]
+
+  @@index([collectorId])
+  @@index([material])
+}
+
+model RecyclingRequest {
+  id            String                     @id @default(uuid())
+  materialLotId String
+  collectorId   String
+  recyclerId    String
+  status        RequestStatus              @default(SUBMITTED)
+  createdAt     TimestamptzString          @default(now())
+  updatedAt     temporal.updatedAtString()
+
+  materialLot   MaterialLot                @relation(fields:[materialLotId], references:[id])
+  collector     User                       @relation("RequestCollector", fields:[collectorId], references:[id])
+  recycler      User                       @relation("RequestRecycler", fields:[recyclerId], references:[id])
+  quote         Quote?
+  transaction   Transaction?
+
+  @@index([collectorId])
+  @@index([recyclerId])
+  @@index([materialLotId])
+}
+
+model Quote {
+  id         String                     @id @default(uuid())
+  requestId  String                     @unique
+  amount     Decimal
+  pricePerKg Decimal?
+  notes      String?
+  createdAt  TimestamptzString          @default(now())
+  updatedAt  temporal.updatedAtString()
+
+  request    RecyclingRequest           @relation(fields:[requestId], references:[id])
+}
+
+model Transaction {
+  id            String                     @id @default(uuid())
+  requestId     String                     @unique
+  collectorId   String
+  recyclerId    String
+  status        TransactionStatus          @default(SCHEDULED)
+  paymentStatus PaymentStatus              @default(PENDING)
+  scheduledAt   TimestamptzString?
+  completedAt   TimestamptzString?
+  createdAt     TimestamptzString          @default(now())
+  updatedAt     temporal.updatedAtString()
+
+  request       RecyclingRequest           @relation(fields:[requestId], references:[id])
+  collector     User                       @relation("TransactionCollector", fields:[collectorId], references:[id])
+  recycler      User                       @relation("TransactionRecycler", fields:[recyclerId], references:[id])
+  payment       Payment?
+}
+
+model Payment {
+  id            String             @id @default(uuid())
+  transactionId String             @unique
+  amount        Decimal
+  status        PaymentStatus      @default(PENDING)
+  method        String?
+  recordedAt    TimestamptzString?
+  createdAt     TimestamptzString  @default(now())
+
+  transaction   Transaction        @relation(fields:[transactionId], references:[id])
+}
+
+model Location {
+  id        String            @id @default(uuid())
+  userId    String?
+  latitude  Decimal
+  longitude Decimal
+  address   String?
+  createdAt TimestamptzString @default(now())
+
+  @@index([userId])
+}
+
+model Notification {
+  id        String             @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  readAt    TimestamptzString?
+  createdAt TimestamptzString  @default(now())
+
+  user      User               @relation(fields:[userId], references:[id])
+
+  @@index([userId, createdAt])
+}
+
+model AIResult {
+  id            String            @id @default(uuid())
+  materialLotId String
+  category      MaterialCategory?
+  confidence    Decimal?
+  modelName     String?
+  createdAt     TimestamptzString @default(now())
+
+  materialLot   MaterialLot       @relation(fields:[materialLotId], references:[id])
+
+  @@index([materialLotId])
+}
+
+model AuditLog {
+  id        String            @id @default(uuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  createdAt TimestamptzString @default(now())
+
+  user      User?             @relation(fields:[userId], references:[id])
+
+  @@index([entity, entityId])
+  @@index([userId, createdAt])
+}
+
+model SyncOperation {
+  id            String             @id @default(uuid())
+  operationId   String             @unique
+  userId        String
+  operationType String
+  entityType    String
+  entityId      String?
+  payload       Json
+  status        String
+  createdAt     TimestamptzString  @default(now())
+  processedAt   TimestamptzString?
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
