@@ -76,7 +76,6 @@ export default function RecyclerRequestsPage() {
   const [details, setDetails] = useState<Record<string, RequestDetails>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   const [quoteAmounts, setQuoteAmounts] = useState<Record<string, string>>({});
   const [quotePrices, setQuotePrices] = useState<Record<string, string>>({});
   const [quoteNotes, setQuoteNotes] = useState<Record<string, string>>({});
@@ -92,10 +91,7 @@ export default function RecyclerRequestsPage() {
     setError("");
 
     try {
-      const response = await fetch(
-        "/api/recycler/requests",
-      );
-
+      const response = await fetch("/api/recycler/requests");
       const data = await response.json();
 
       if (!response.ok || !data.ok) {
@@ -110,7 +106,6 @@ export default function RecyclerRequestsPage() {
           const detailResponse = await fetch(
             `/api/recycling-requests/${request.id}`,
           );
-
           const detailData = await detailResponse.json();
 
           if (!detailResponse.ok || !detailData.ok) {
@@ -140,6 +135,17 @@ export default function RecyclerRequestsPage() {
       );
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleLogout() {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+    } finally {
+      localStorage.removeItem("kabadiwala_user");
+      window.location.href = "/login";
     }
   }
 
@@ -219,10 +225,12 @@ export default function RecyclerRequestsPage() {
         ...current,
         [requestId]: "",
       }));
+
       setQuotePrices((current) => ({
         ...current,
         [requestId]: "",
       }));
+
       setQuoteNotes((current) => ({
         ...current,
         [requestId]: "",
@@ -247,6 +255,7 @@ export default function RecyclerRequestsPage() {
           method: "POST",
         },
       );
+
       const data = await response.json();
 
       if (!response.ok || !data.ok) {
@@ -278,6 +287,7 @@ export default function RecyclerRequestsPage() {
           method: "POST",
         },
       );
+
       const data = await response.json();
 
       if (!response.ok || !data.ok) {
@@ -287,17 +297,19 @@ export default function RecyclerRequestsPage() {
       await loadRequests();
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to complete transaction.",
+        err instanceof Error ? err.message : "Unable to complete transaction.",
       );
     } finally {
       setCompletingTransaction(null);
     }
   }
 
-  async function recordPayment(transactionId: string, defaultAmount: string) {
-    const amount = paymentAmounts[transactionId]?.trim() || defaultAmount;
+  async function recordPayment(
+    transactionId: string,
+    defaultAmount: string,
+  ) {
+    const amount =
+      paymentAmounts[transactionId]?.trim() || defaultAmount;
     const method = paymentMethods[transactionId]?.trim();
 
     if (!amount || Number(amount) <= 0) {
@@ -327,6 +339,7 @@ export default function RecyclerRequestsPage() {
           }),
         },
       );
+
       const data = await response.json();
 
       if (!response.ok || !data.ok) {
@@ -356,13 +369,25 @@ export default function RecyclerRequestsPage() {
   return (
     <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900">
       <div className="mx-auto max-w-5xl">
-        <p className="text-lg font-medium text-emerald-700">
-          Kabadiwala Connect
-        </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-lg font-medium text-emerald-700">
+              Kabadiwala Connect
+            </p>
 
-        <h1 className="mt-4 text-4xl font-bold tracking-tight">
-          Recycler Requests
-        </h1>
+            <h1 className="mt-4 text-4xl font-bold tracking-tight">
+              Recycler Requests
+            </h1>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="w-fit rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-700 transition hover:bg-slate-100"
+          >
+            Logout
+          </button>
+        </div>
 
         <p className="mt-3 text-lg text-slate-600">
           Review collector material requests and submit quotes using real
@@ -401,6 +426,7 @@ export default function RecyclerRequestsPage() {
                     <p className="text-sm font-medium uppercase tracking-wide text-slate-500">
                       Request
                     </p>
+
                     <p className="mt-1 break-all font-mono text-sm text-slate-700">
                       {request.id}
                     </p>
@@ -632,6 +658,7 @@ export default function RecyclerRequestsPage() {
                           <p className="text-sm font-semibold text-slate-800">
                             Record Payment
                           </p>
+
                           <p className="mt-1 text-sm text-slate-500">
                             Enter the actual amount paid to the collector.
                           </p>
@@ -641,7 +668,11 @@ export default function RecyclerRequestsPage() {
                               type="number"
                               min="0.01"
                               step="0.01"
-                              value={paymentAmounts[transaction.id] ?? quote?.amount ?? ""}
+                              value={
+                                paymentAmounts[transaction.id] ??
+                                quote?.amount ??
+                                ""
+                              }
                               onChange={(event) =>
                                 setPaymentAmounts((current) => ({
                                   ...current,
@@ -662,10 +693,14 @@ export default function RecyclerRequestsPage() {
                               }
                               className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
                             >
-                              <option value="">Select payment method</option>
+                              <option value="">
+                                Select payment method
+                              </option>
                               <option value="CASH">Cash</option>
                               <option value="UPI">UPI</option>
-                              <option value="BANK_TRANSFER">Bank transfer</option>
+                              <option value="BANK_TRANSFER">
+                                Bank transfer
+                              </option>
                             </select>
                           </div>
 

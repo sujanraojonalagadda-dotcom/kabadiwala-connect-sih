@@ -3,12 +3,20 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+type Role = "COLLECTOR" | "RECYCLER";
+
 export default function LoginPage() {
   const router = useRouter();
 
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
-  const [step, setStep] = useState<"phone" | "otp">("phone");
+  const [role, setRole] = useState<Role | "">("");
+  const [businessName, setBusinessName] = useState("");
+
+  const [step, setStep] = useState<
+    "phone" | "otp" | "role"
+  >("phone");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -37,7 +45,9 @@ export default function LoginPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ phone }),
+        body: JSON.stringify({
+          phone,
+        }),
       });
 
       const data = await response.json();
@@ -46,24 +56,118 @@ export default function LoginPage() {
         throw new Error(data.error || "Login failed.");
       }
 
-      localStorage.setItem("kabadiwala_user", JSON.stringify(data.user));
+      /*
+       * Existing account:
+       * The backend already knows the user's role.
+       */
+      if (data.existing && data.user) {
+        localStorage.setItem(
+          "kabadiwala_user",
+          JSON.stringify(data.user),
+        );
+
+        if (data.user.role === "COLLECTOR") {
+          router.push("/collector");
+        } else if (data.user.role === "RECYCLER") {
+          router.push("/recycler/requests");
+        } else if (data.user.role === "ADMIN") {
+          router.push("/admin/verifications");
+        } else {
+          throw new Error("Unsupported account role.");
+        }
+
+        return;
+      }
+
+      /*
+       * New account:
+       * The backend has NOT created the user yet.
+       * Show role selection first.
+       */
+      if (data.requiresRoleSelection) {
+        setStep("role");
+        return;
+      }
+
+      throw new Error("Unable to determine account status.");
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Unable to complete login.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleCreateAccount() {
+    if (!role) {
+      setError("Choose whether you are a collector or recycler.");
+      return;
+    }
+
+    if (role === "RECYCLER" && !businessName.trim()) {
+      setError("Enter your business name.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/auth/dev-login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phone,
+          role,
+          businessName:
+            role === "RECYCLER"
+              ? businessName.trim()
+              : undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.ok || !data.user) {
+        throw new Error(
+          data.error || "Unable to create your account.",
+        );
+      }
+
+      localStorage.setItem(
+        "kabadiwala_user",
+        JSON.stringify(data.user),
+      );
 
       if (data.user.role === "COLLECTOR") {
         router.push("/collector");
       } else if (data.user.role === "RECYCLER") {
         router.push("/recycler/requests");
-      } else if (data.user.role === "ADMIN") {
-        router.push("/admin/verifications");
       } else {
         throw new Error("Unsupported account role.");
       }
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Unable to complete login.",
+        error instanceof Error
+          ? error.message
+          : "Unable to create your account.",
       );
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleBackToPhone() {
+    setStep("phone");
+    setOtp("");
+    setRole("");
+    setBusinessName("");
+    setError("");
   }
 
   return (
@@ -75,16 +179,23 @@ export default function LoginPage() {
           </p>
 
           <h1 className="mt-3 text-3xl font-bold text-gray-900">
-            {step === "phone" ? "Welcome back" : "Verify your number"}
+            {step === "phone" && "Welcome"}
+            {step === "otp" && "Verify your number"}
+            {step === "role" && "Choose your role"}
           </h1>
 
           <p className="mt-2 text-sm leading-6 text-gray-600">
-            {step === "phone"
-              ? "Enter your mobile number to continue."
-              : `Enter the OTP sent to ${phone}.`}
+            {step === "phone" &&
+              "Enter your mobile number to continue."}
+
+            {step === "otp" &&
+              `Enter the OTP sent to ${phone}.`}
+
+            {step === "role" &&
+              "Tell us how you will use Kabadiwala Connect."}
           </p>
 
-          {step === "phone" ? (
+          {step === "phone" && (
             <div className="mt-8">
               <label className="text-sm font-semibold text-gray-800">
                 Mobile number
@@ -101,7 +212,9 @@ export default function LoginPage() {
                   maxLength={10}
                   value={phone}
                   onChange={(event) =>
-                    setPhone(event.target.value.replace(/\D/g, ""))
+                    setPhone(
+                      event.target.value.replace(/\D/g, ""),
+                    )
                   }
                   placeholder="9876543210"
                   className="w-full rounded-r-2xl border border-gray-300 bg-white px-4 py-4 text-lg outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100"
@@ -116,7 +229,9 @@ export default function LoginPage() {
                 Continue
               </button>
             </div>
-          ) : (
+          )}
+
+          {step === "otp" && (
             <div className="mt-8">
               <label className="text-sm font-semibold text-gray-800">
                 Development OTP
@@ -128,7 +243,9 @@ export default function LoginPage() {
                 maxLength={6}
                 value={otp}
                 onChange={(event) =>
-                  setOtp(event.target.value.replace(/\D/g, ""))
+                  setOtp(
+                    event.target.value.replace(/\D/g, ""),
+                  )
                 }
                 placeholder="123456"
                 className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-4 text-center text-2xl font-bold tracking-[0.5em] outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100"
@@ -140,19 +257,108 @@ export default function LoginPage() {
                 disabled={loading}
                 className="mt-6 w-full rounded-2xl bg-green-700 px-6 py-4 font-bold text-white hover:bg-green-800 disabled:bg-gray-300"
               >
-                {loading ? "Signing in..." : "Verify & Continue"}
+                {loading
+                  ? "Checking..."
+                  : "Verify & Continue"}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleBackToPhone}
+                className="mt-3 w-full py-3 text-sm font-semibold text-gray-600"
+              >
+                Change mobile number
+              </button>
+            </div>
+          )}
+
+          {step === "role" && (
+            <div className="mt-8 space-y-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setRole("COLLECTOR");
+                  setBusinessName("");
+                  setError("");
+                }}
+                className={`w-full rounded-2xl border-2 p-5 text-left transition ${
+                  role === "COLLECTOR"
+                    ? "border-green-600 bg-green-50"
+                    : "border-gray-200 bg-white hover:border-green-300"
+                }`}
+              >
+                <p className="text-lg font-bold text-gray-900">
+                  ♻️ Collector
+                </p>
+
+                <p className="mt-1 text-sm leading-5 text-gray-600">
+                  Collect recyclable materials and sell them
+                  to verified recyclers.
+                </p>
               </button>
 
               <button
                 type="button"
                 onClick={() => {
-                  setStep("phone");
-                  setOtp("");
+                  setRole("RECYCLER");
                   setError("");
                 }}
-                className="mt-3 w-full py-3 text-sm font-semibold text-gray-600"
+                className={`w-full rounded-2xl border-2 p-5 text-left transition ${
+                  role === "RECYCLER"
+                    ? "border-green-600 bg-green-50"
+                    : "border-gray-200 bg-white hover:border-green-300"
+                }`}
               >
-                Change mobile number
+                <p className="text-lg font-bold text-gray-900">
+                  🏭 Recycler
+                </p>
+
+                <p className="mt-1 text-sm leading-5 text-gray-600">
+                  Buy recyclable materials from collectors
+                  through the formal recycling chain.
+                </p>
+              </button>
+
+              {role === "RECYCLER" && (
+                <div>
+                  <label className="text-sm font-semibold text-gray-800">
+                    Business name
+                  </label>
+
+                  <input
+                    type="text"
+                    value={businessName}
+                    onChange={(event) =>
+                      setBusinessName(event.target.value)
+                    }
+                    placeholder="GreenCycle Recycling Center"
+                    className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-4 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100"
+                  />
+
+                  <p className="mt-2 text-xs leading-5 text-gray-500">
+                    Recycler accounts require verification
+                    before they can receive requests.
+                  </p>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleCreateAccount}
+                disabled={loading || !role}
+                className="w-full rounded-2xl bg-green-700 px-6 py-4 font-bold text-white hover:bg-green-800 disabled:bg-gray-300"
+              >
+                {loading
+                  ? "Creating account..."
+                  : "Continue"}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleBackToPhone}
+                className="w-full py-3 text-sm font-semibold text-gray-600"
+              >
+                Start over
               </button>
             </div>
           )}
@@ -164,7 +370,8 @@ export default function LoginPage() {
           )}
 
           <div className="mt-6 rounded-2xl bg-amber-50 p-4 text-xs leading-5 text-amber-800">
-            Development login: OTP <strong>123456</strong>. Real SMS
+            Development login: OTP{" "}
+            <strong>123456</strong>. Real SMS
             authentication will be connected before production.
           </div>
         </section>
