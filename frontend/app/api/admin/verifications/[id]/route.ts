@@ -67,6 +67,17 @@ export async function PATCH(
       );
     }
 
+    // A verification request can only be reviewed once.
+    if (verification.status !== "PENDING") {
+      return Response.json(
+        {
+          ok: false,
+          error: "This verification request has already been reviewed.",
+        },
+        { status: 409 },
+      );
+    }
+
     const updatedVerification =
       await db.orm.public.VerificationRequest
         .where({ id })
