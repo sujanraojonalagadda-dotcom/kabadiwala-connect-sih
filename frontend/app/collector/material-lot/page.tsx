@@ -4,6 +4,8 @@ import { ChangeEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/i18n/use-language";
+
+import VoiceButton from "@/lib/voice/VoiceButton";
 import type { TranslationKey } from "@/lib/i18n/translations";
 
 const materials: Array<{ id: string; nameKey: TranslationKey; icon: string; descriptionKey: TranslationKey }> = [
@@ -41,7 +43,7 @@ const materials: Array<{ id: string; nameKey: TranslationKey; icon: string; desc
 
 export default function CreateMaterialLotPage() {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
 
   const [material, setMaterial] = useState("");
   const [weight, setWeight] = useState("");
@@ -173,9 +175,15 @@ export default function CreateMaterialLotPage() {
             {t("whatMaterial")}
           </h2>
 
-          <p className="mt-1 text-sm leading-5 text-gray-600">
-            {t("selectClosestCategory")}
-          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-3">
+            <p className="text-sm leading-5 text-gray-600">
+              {t("selectClosestCategory")}
+            </p>
+            <VoiceButton
+              text={`${t("whatMaterial")}. ${t("selectClosestCategory")}`}
+              language={language}
+            />
+          </div>
 
           <div className="mt-4 grid grid-cols-2 gap-3">
             {materials.map((item) => {
