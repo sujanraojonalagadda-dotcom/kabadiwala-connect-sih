@@ -28,10 +28,42 @@ export async function GET() {
     const verifications =
       await db.orm.public.VerificationRequest.all();
 
+    const enrichedVerifications = await Promise.all(
+      verifications.map(async (verification) => {
+        const recycler = await db.orm.public.Recycler
+          .where({ id: verification.recyclerId })
+          .first();
+
+        const user = recycler
+          ? await db.orm.public.User
+              .where({ id: recycler.userId })
+              .first()
+          : null;
+
+        return {
+          ...verification,
+          recycler: recycler
+            ? {
+                id: recycler.id,
+                businessName: recycler.businessName,
+                verificationStatus: recycler.verificationStatus,
+              }
+            : null,
+          user: user
+            ? {
+                id: user.id,
+                phone: user.phone,
+              }
+            : null,
+        };
+      }),
+    );
+
     return Response.json({
       ok: true,
-      verifications,
+      verifications: enrichedVerifications,
     });
+
   } catch (error) {
     console.error("GET ADMIN VERIFICATIONS ERROR:", error);
 
