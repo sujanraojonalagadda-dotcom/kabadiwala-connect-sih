@@ -39,13 +39,25 @@ export async function GET() {
       );
     }
 
-    if (recycler.verificationStatus !== "VERIFIED") {
+    if (recycler.verificationStatus === "PENDING") {
       return Response.json(
         {
-          ok: false,
-          error: "Recycler is not verified.",
+          ok: true,
+          verificationStatus: "PENDING",
+          requests: [],
         },
-        { status: 403 },
+        { status: 200 },
+      );
+    }
+
+    if (recycler.verificationStatus === "REJECTED") {
+      return Response.json(
+        {
+          ok: true,
+          verificationStatus: "REJECTED",
+          requests: [],
+        },
+        { status: 200 },
       );
     }
 

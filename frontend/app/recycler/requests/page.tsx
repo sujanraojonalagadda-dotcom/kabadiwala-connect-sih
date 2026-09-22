@@ -74,6 +74,9 @@ export default function RecyclerRequestsPage() {
   const [user, setUser] = useState<User | null>(null);
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [details, setDetails] = useState<Record<string, RequestDetails>>({});
+  const [verificationStatus, setVerificationStatus] = useState<
+    "PENDING" | "VERIFIED" | "REJECTED" | ""
+  >("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [quoteAmounts, setQuoteAmounts] = useState<Record<string, string>>({});
@@ -97,6 +100,14 @@ export default function RecyclerRequestsPage() {
       if (!response.ok || !data.ok) {
         throw new Error(data.error || "Unable to load recycling requests.");
       }
+
+      setVerificationStatus(
+        data.verificationStatus === "PENDING" ||
+          data.verificationStatus === "VERIFIED" ||
+          data.verificationStatus === "REJECTED"
+          ? data.verificationStatus
+          : "",
+      );
 
       const requestList: RequestItem[] = data.requests ?? [];
       setRequests(requestList);
@@ -394,13 +405,59 @@ export default function RecyclerRequestsPage() {
           transaction data.
         </p>
 
+        {verificationStatus === "PENDING" && (
+          <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+            <p className="text-sm font-bold uppercase tracking-wide text-amber-700">
+              Verification pending
+            </p>
+
+            <h2 className="mt-2 text-2xl font-bold text-slate-900">
+              Your recycler account is under review
+            </h2>
+
+            <p className="mt-3 max-w-2xl leading-7 text-slate-700">
+              Your business registration was submitted successfully. An
+              administrator needs to verify your recycler account before you
+              can receive collector requests and submit quotes.
+            </p>
+
+            <div className="mt-5 rounded-xl bg-white p-4 text-sm text-slate-600 ring-1 ring-amber-100">
+              You can come back after verification to start processing real
+              collector requests.
+            </div>
+          </div>
+        )}
+
+        {verificationStatus === "REJECTED" && (
+          <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-6 shadow-sm">
+            <p className="text-sm font-bold uppercase tracking-wide text-red-700">
+              Verification not approved
+            </p>
+
+            <h2 className="mt-2 text-2xl font-bold text-slate-900">
+              Your recycler account needs verification
+            </h2>
+
+            <p className="mt-3 max-w-2xl leading-7 text-slate-700">
+              Your recycler account is not currently approved to receive
+              collector requests. Please contact the platform administrator
+              for the next steps.
+            </p>
+
+            <div className="mt-5 rounded-xl bg-white p-4 text-sm text-slate-600 ring-1 ring-red-100">
+              No rejection reason is shown here because none is provided by
+              the current verification workflow.
+            </div>
+          </div>
+        )}
+
         {error && (
           <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-red-700">
             {error}
           </div>
         )}
 
-        {requests.length === 0 && !error && (
+        {verificationStatus === "VERIFIED" && requests.length === 0 && !error && (
           <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
             <h2 className="text-xl font-semibold">No requests yet</h2>
             <p className="mt-2 text-slate-600">
