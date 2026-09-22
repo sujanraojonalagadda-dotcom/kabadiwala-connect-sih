@@ -11,43 +11,126 @@ type Recycler = {
   updatedAt: string;
 };
 
+type MaterialLot = {
+  id: string;
+  material: string;
+  weightKg: string | number;
+  photoUrl: string | null;
+  createdAt: string;
+};
+
+const materialNames: Record<string, string> = {
+  E_WASTE: "E-Waste",
+  PLASTIC: "Plastic",
+  METAL: "Metal",
+  PAPER: "Paper",
+  OTHER: "Other",
+};
+
+function formatMaterial(material: string) {
+  return materialNames[material] || material;
+}
+
 export default function RecyclersPage() {
   const [recyclers, setRecyclers] = useState<Recycler[]>([]);
+  const [materialLots, setMaterialLots] = useState<MaterialLot[]>([]);
+  const [selectedLotId, setSelectedLotId] = useState("");
+  const [selectedRecyclerId, setSelectedRecyclerId] = useState("");
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   useEffect(() => {
-    async function loadRecyclers() {
+    async function loadData() {
       try {
         setLoading(true);
         setError("");
 
-        const response = await fetch("/api/recyclers");
+        const [recyclersResponse, lotsResponse] = await Promise.all([
+          fetch("/api/recyclers"),
+          fetch("/api/material-lots"),
+        ]);
 
-        if (!response.ok) {
-          throw new Error("Unable to load recyclers.");
+        const recyclersData = await recyclersResponse.json();
+        const lotsData = await lotsResponse.json();
+
+        if (!recyclersResponse.ok || !recyclersData.ok) {
+          throw new Error(
+            recyclersData.error || "Unable to load recyclers.",
+          );
         }
 
-        const data = await response.json();
-
-        if (!data.ok) {
-          throw new Error(data.error || "Unable to load recyclers.");
+        if (!lotsResponse.ok || !lotsData.ok) {
+          throw new Error(
+            lotsData.error || "Unable to load material lots.",
+          );
         }
 
-        setRecyclers(data.recyclers);
+        setRecyclers(recyclersData.recyclers);
+        setMaterialLots(lotsData.materialLots);
+
+        if (lotsData.materialLots.length > 0) {
+          setSelectedLotId(lotsData.materialLots[0].id);
+        }
       } catch (err) {
         setError(
           err instanceof Error
             ? err.message
-            : "Unable to load recyclers.",
+            : "Unable to load recycler information.",
         );
       } finally {
         setLoading(false);
       }
     }
 
-    loadRecyclers();
+    loadData();
   }, []);
+
+  async function sendRequest() {
+    if (!selectedLotId || !selectedRecyclerId) {
+      setError("Select a material lot and recycler first.");
+      setSuccess("");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setError("");
+      setSuccess("");
+
+      const response = await fetch("/api/recycling-requests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          materialLotId: selectedLotId,
+          recyclerId: selectedRecyclerId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(
+          data.error || "Unable to send recycling request.",
+        );
+      }
+
+      setSuccess(
+        "Recycling request sent successfully. The recycler can now review your material.",
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to send recycling request.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-[#f7f8f4] px-5 py-6">
@@ -56,87 +139,163 @@ export default function RecyclersPage() {
           <p className="text-sm font-medium text-green-700">
             Kabadiwala Connect
           </p>
-
           <h1 className="mt-1 text-2xl font-bold text-gray-900">
             Find Recyclers
           </h1>
-
           <p className="mt-2 text-sm text-gray-600">
-            Connect your material lot with verified recyclers.
+            Send a real recycling request for one of your material lots.
           </p>
         </header>
-
-        <section className="mb-5 rounded-2xl border border-gray-200 bg-white p-4">
-          <p className="text-sm font-medium text-gray-900">
-            Recycler availability
-          </p>
-
-          <p className="mt-1 text-sm text-gray-600">
-            Only verified recycler records from the connected database are
-            shown.
-          </p>
-        </section>
 
         {loading && (
           <section className="rounded-2xl border border-gray-200 bg-white p-5 text-center">
             <p className="text-sm text-gray-600">
-              Loading verified recyclers...
+              Loading your material lots and verified recyclers...
             </p>
           </section>
         )}
 
         {!loading && error && (
-          <section className="rounded-2xl border border-red-200 bg-red-50 p-5">
+          <section className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4">
             <p className="text-sm font-medium text-red-800">
-              Unable to load recyclers
+              Unable to continue
             </p>
-
             <p className="mt-1 text-sm text-red-700">{error}</p>
           </section>
         )}
 
-        {!loading && !error && recyclers.length === 0 && (
+        {!loading && success && (
+          <section className="mb-4 rounded-2xl border border-green-200 bg-green-50 p-4">
+            <p className="text-sm font-medium text-green-800">
+              Request sent
+            </p>
+            <p className="mt-1 text-sm text-green-700">{success}</p>
+          </section>
+        )}
+
+        {!loading && materialLots.length === 0 && (
           <section className="rounded-2xl border border-gray-200 bg-white p-6 text-center">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-2xl">
               ♻️
             </div>
-
             <h2 className="mt-4 text-lg font-semibold text-gray-900">
-              No verified recyclers available yet
+              No material lots available
             </h2>
-
             <p className="mt-2 text-sm leading-6 text-gray-600">
-              Verified recycler records will appear here when they are
-              available in the system.
+              Create a material lot first, then return here to connect with a
+              verified recycler.
             </p>
           </section>
         )}
 
-        {!loading && !error && recyclers.length > 0 && (
-          <section className="space-y-3">
-            {recyclers.map((recycler) => (
-              <article
-                key={recycler.id}
-                className="rounded-2xl border border-gray-200 bg-white p-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 className="font-semibold text-gray-900">
-                      {recycler.businessName || "Verified Recycler"}
-                    </h2>
+        {!loading && materialLots.length > 0 && (
+          <>
+            <section className="mb-5 rounded-2xl border border-gray-200 bg-white p-4">
+              <h2 className="text-base font-semibold text-gray-900">
+                1. Select material lot
+              </h2>
+              <p className="mt-1 text-sm text-gray-600">
+                Choose one of your recorded material lots.
+              </p>
 
-                    <p className="mt-1 text-sm text-gray-600">
-                      Verified recycler
-                    </p>
-                  </div>
+              <div className="mt-3 space-y-2">
+                {materialLots.map((lot) => (
+                  <button
+                    key={lot.id}
+                    type="button"
+                    onClick={() => setSelectedLotId(lot.id)}
+                    className={`w-full rounded-xl border p-3 text-left transition ${
+                      selectedLotId === lot.id
+                        ? "border-green-600 bg-green-50"
+                        : "border-gray-200 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {formatMaterial(lot.material)}
+                        </p>
+                        <p className="mt-1 text-sm text-gray-600">
+                          {lot.weightKg} kg
+                        </p>
+                      </div>
+                      {selectedLotId === lot.id && (
+                        <span className="text-sm font-semibold text-green-700">
+                          Selected
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
 
-                  <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800">
-                    Verified
-                  </span>
+            <section className="mb-5 rounded-2xl border border-gray-200 bg-white p-4">
+              <h2 className="text-base font-semibold text-gray-900">
+                2. Select verified recycler
+              </h2>
+              <p className="mt-1 text-sm text-gray-600">
+                Only verified recycler records from the connected database are
+                shown.
+              </p>
+
+              {recyclers.length === 0 ? (
+                <p className="mt-4 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
+                  No verified recyclers are available yet.
+                </p>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  {recyclers.map((recycler) => (
+                    <button
+                      key={recycler.id}
+                      type="button"
+                      onClick={() => setSelectedRecyclerId(recycler.userId)}
+                      className={`w-full rounded-xl border p-4 text-left transition ${
+                        selectedRecyclerId === recycler.userId
+                          ? "border-green-600 bg-green-50"
+                          : "border-gray-200 bg-white"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-gray-900">
+                            {recycler.businessName || "Verified Recycler"}
+                          </p>
+                          <p className="mt-1 text-sm text-gray-600">
+                            Verified recycler
+                          </p>
+                        </div>
+
+                        <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800">
+                          Verified
+                        </span>
+                      </div>
+
+                      {selectedRecyclerId === recycler.userId && (
+                        <p className="mt-3 text-sm font-medium text-green-700">
+                          Selected
+                        </p>
+                      )}
+                    </button>
+                  ))}
                 </div>
-              </article>
-            ))}
-          </section>
+              )}
+            </section>
+
+            <button
+              type="button"
+              onClick={sendRequest}
+              disabled={
+                submitting ||
+                !selectedLotId ||
+                !selectedRecyclerId ||
+                recyclers.length === 0
+              }
+              className="w-full rounded-2xl bg-green-700 px-4 py-4 text-base font-semibold text-white disabled:cursor-not-allowed disabled:bg-gray-300"
+            >
+              {submitting ? "Sending request..." : "Send Recycling Request"}
+            </button>
+          </>
         )}
       </div>
     </main>

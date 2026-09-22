@@ -48,7 +48,15 @@ export default function LoginPage() {
 
       localStorage.setItem("kabadiwala_user", JSON.stringify(data.user));
 
-      router.push("/collector");
+      if (data.user.role === "COLLECTOR") {
+        router.push("/collector");
+      } else if (data.user.role === "RECYCLER") {
+        router.push("/recycler/requests");
+      } else if (data.user.role === "ADMIN") {
+        router.push("/admin/verifications");
+      } else {
+        throw new Error("Unsupported account role.");
+      }
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "Unable to complete login.",

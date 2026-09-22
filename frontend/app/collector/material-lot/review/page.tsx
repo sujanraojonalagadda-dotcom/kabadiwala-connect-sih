@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { useLanguage } from "@/lib/i18n/use-language";
+import type { TranslationKey } from "@/lib/i18n/translations";
+
 type MaterialLotDraft = {
   material: string;
   weightKg: number;
@@ -11,16 +14,17 @@ type MaterialLotDraft = {
   photoDataUrl: string;
 };
 
-const classifications = [
-  { id: "E_WASTE", name: "E-Waste", icon: "💻" },
-  { id: "PLASTIC", name: "Plastic", icon: "🧴" },
-  { id: "METAL", name: "Metal", icon: "🔩" },
-  { id: "PAPER", name: "Paper", icon: "📄" },
-  { id: "OTHER", name: "Other", icon: "📦" },
+const classifications: Array<{ id: string; nameKey: TranslationKey; icon: string }> = [
+  { id: "E_WASTE", nameKey: "eWaste", icon: "💻" },
+  { id: "PLASTIC", nameKey: "plastic", icon: "🧴" },
+  { id: "METAL", nameKey: "metal", icon: "🔩" },
+  { id: "PAPER", nameKey: "paper", icon: "📄" },
+  { id: "OTHER", nameKey: "other", icon: "📦" },
 ];
 
 export default function MaterialLotReviewPage() {
   const router = useRouter();
+  const { t } = useLanguage();
 
   const [draft, setDraft] = useState<MaterialLotDraft | null>(null);
   const [classification, setClassification] = useState("");
@@ -214,7 +218,7 @@ export default function MaterialLotReviewPage() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-50">
         <p className="text-sm text-gray-600">
-          Loading material lot...
+          {t("loadingMaterialLot")}
         </p>
       </main>
     );
@@ -225,18 +229,18 @@ export default function MaterialLotReviewPage() {
       <main className="min-h-screen bg-gray-50 px-4 py-8">
         <div className="mx-auto max-w-lg rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
           <h1 className="text-xl font-bold text-gray-900">
-            Material lot draft unavailable
+            {t("materialLotDraftUnavailable")}
           </h1>
 
           <p className="mt-2 text-sm leading-6 text-gray-600">
-            {error || "Please start the material lot process again."}
+            {error || t("pleaseStartAgain")}
           </p>
 
           <Link
             href="/collector/material-lot"
             className="mt-6 block w-full rounded-2xl bg-green-700 px-6 py-4 text-center font-bold text-white"
           >
-            Start Again
+            {t("startAgain")}
           </Link>
         </div>
       </main>
@@ -256,11 +260,11 @@ export default function MaterialLotReviewPage() {
 
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-green-700">
-              Kabadiwala Connect
+              {t("appName")}
             </p>
 
             <h1 className="text-lg font-bold text-gray-900">
-              Review Material
+              {t("reviewMaterial")}
             </h1>
           </div>
         </div>
@@ -270,11 +274,11 @@ export default function MaterialLotReviewPage() {
         <section className="mb-6">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-green-700">
-              Review & confirm
+              {t("reviewConfirm")}
             </span>
 
             <span className="text-xs font-medium text-gray-400">
-              Step 2 of 3
+              {t("stepTwoOfThree")}
             </span>
           </div>
 
@@ -285,19 +289,19 @@ export default function MaterialLotReviewPage() {
 
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
           <h2 className="font-bold text-gray-900">
-            Material photo
+            {t("materialPhoto")}
           </h2>
 
           {draft.photoDataUrl ? (
             <img
               src={draft.photoDataUrl}
-              alt="Selected material"
+              alt={t("selectedMaterial")}
               className="mt-4 h-56 w-full rounded-2xl object-cover"
             />
           ) : (
             <div className="mt-4 flex h-40 items-center justify-center rounded-2xl bg-gray-100">
               <p className="text-sm text-gray-500">
-                No photo selected
+                {t("noPhotoSelected")}
               </p>
             </div>
           )}
@@ -311,11 +315,11 @@ export default function MaterialLotReviewPage() {
 
         <section className="mt-6">
           <h2 className="text-lg font-bold text-gray-900">
-            Confirm material category
+            {t("confirmMaterialCategory")}
           </h2>
 
           <p className="mt-1 text-sm leading-5 text-gray-600">
-            Check the category and correct it if needed.
+            {t("checkCategoryCorrect")}
           </p>
 
           <div className="mt-4 space-y-2">
@@ -338,7 +342,7 @@ export default function MaterialLotReviewPage() {
                   <span className="text-2xl">{item.icon}</span>
 
                   <span className="flex-1 font-semibold text-gray-900">
-                    {item.name}
+                    {t(item.nameKey)}
                   </span>
 
                   <span
@@ -358,33 +362,33 @@ export default function MaterialLotReviewPage() {
 
         <section className="mt-7 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
           <h2 className="font-bold text-gray-900">
-            Material lot summary
+            {t("materialLotSummary")}
           </h2>
 
           <div className="mt-4 divide-y divide-gray-100">
             <div className="flex items-center justify-between gap-4 py-3">
               <span className="text-sm text-gray-500">
-                Category
+                {t("category")}
               </span>
 
               <span className="font-semibold text-gray-900">
-                {selected?.icon} {selected?.name}
+                {selected?.icon} {selected ? t(selected.nameKey) : ""}
               </span>
             </div>
 
             <div className="flex items-center justify-between py-3">
               <span className="text-sm text-gray-500">
-                Approx. weight
+                {t("approxWeight")}
               </span>
 
               <span className="font-semibold text-gray-900">
-                {draft.weightKg} kg
+                {draft.weightKg} {t("kg")}
               </span>
             </div>
 
             <div className="flex items-center justify-between py-3">
               <span className="text-sm text-gray-500">
-                Photo
+                {t("photo")}
               </span>
 
               <span
@@ -394,7 +398,7 @@ export default function MaterialLotReviewPage() {
                     : "text-gray-500"
                 }`}
               >
-                {draft.photoDataUrl ? "✓ Added" : "Not added"}
+                {draft.photoDataUrl ? `✓ ${t("added")}` : t("notAdded")}
               </span>
             </div>
           </div>
@@ -413,13 +417,12 @@ export default function MaterialLotReviewPage() {
           className="mt-7 w-full rounded-2xl bg-green-700 px-6 py-4 font-bold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-gray-300"
         >
           {submitting
-            ? "Uploading photo & creating lot..."
-            : "Confirm & Create Lot"}
+            ? t("uploadingCreatingLot")
+            : t("confirmCreateLot")}
         </button>
 
         <p className="mt-3 text-center text-xs leading-5 text-gray-500">
-          Your photo is uploaded securely before the material lot is
-          created.
+          {t("secureUploadNotice")}
         </p>
       </div>
     </main>

@@ -48,8 +48,6 @@ type RequestDetails = {
   recycler: Recycler | null;
 };
 
-const COLLECTOR_ID = "449ead0d-e8f7-4b2f-82a7-db5e9e762575";
-
 const materialNames: Record<string, string> = {
   E_WASTE: "E-Waste",
   PLASTIC: "Plastic",
@@ -98,7 +96,7 @@ export default function CollectorRequestsPage() {
       setError("");
 
       const response = await fetch(
-        `/api/recycling-requests?collectorId=${COLLECTOR_ID}`,
+        `/api/recycling-requests`,
         {
           method: "GET",
           cache: "no-store",
@@ -201,7 +199,6 @@ export default function CollectorRequestsPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            collectorId: COLLECTOR_ID,
           }),
         },
       );
@@ -239,7 +236,6 @@ export default function CollectorRequestsPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            collectorId: COLLECTOR_ID,
           }),
         },
       );
@@ -285,7 +281,6 @@ export default function CollectorRequestsPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            actorId: COLLECTOR_ID,
           }),
         },
       );
@@ -331,7 +326,6 @@ export default function CollectorRequestsPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            collectorId: COLLECTOR_ID,
           }),
         },
       );

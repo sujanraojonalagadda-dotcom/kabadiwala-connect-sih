@@ -81,6 +81,11 @@ export default function RecyclerRequestsPage() {
   const [quotePrices, setQuotePrices] = useState<Record<string, string>>({});
   const [quoteNotes, setQuoteNotes] = useState<Record<string, string>>({});
   const [submittingQuote, setSubmittingQuote] = useState<string | null>(null);
+  const [confirmingTransaction, setConfirmingTransaction] = useState<string | null>(null);
+  const [completingTransaction, setCompletingTransaction] = useState<string | null>(null);
+  const [paymentAmounts, setPaymentAmounts] = useState<Record<string, string>>({});
+  const [paymentMethods, setPaymentMethods] = useState<Record<string, string>>({});
+  const [recordingPayment, setRecordingPayment] = useState<string | null>(null);
 
   async function loadRequests() {
     setLoading(true);
@@ -228,6 +233,113 @@ export default function RecyclerRequestsPage() {
       );
     } finally {
       setSubmittingQuote(null);
+    }
+  }
+
+  async function confirmRecyclerHandover(transactionId: string) {
+    setConfirmingTransaction(transactionId);
+    setError("");
+
+    try {
+      const response = await fetch(
+        `/api/transactions/${transactionId}/recycler-confirm`,
+        {
+          method: "POST",
+        },
+      );
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(
+          data.error || "Unable to confirm recycler handover.",
+        );
+      }
+
+      await loadRequests();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to confirm recycler handover.",
+      );
+    } finally {
+      setConfirmingTransaction(null);
+    }
+  }
+
+  async function completeTransaction(transactionId: string) {
+    setCompletingTransaction(transactionId);
+    setError("");
+
+    try {
+      const response = await fetch(
+        `/api/transactions/${transactionId}/complete`,
+        {
+          method: "POST",
+        },
+      );
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "Unable to complete transaction.");
+      }
+
+      await loadRequests();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to complete transaction.",
+      );
+    } finally {
+      setCompletingTransaction(null);
+    }
+  }
+
+  async function recordPayment(transactionId: string, defaultAmount: string) {
+    const amount = paymentAmounts[transactionId]?.trim() || defaultAmount;
+    const method = paymentMethods[transactionId]?.trim();
+
+    if (!amount || Number(amount) <= 0) {
+      setError("Enter a valid payment amount.");
+      return;
+    }
+
+    if (!method) {
+      setError("Select a payment method.");
+      return;
+    }
+
+    setRecordingPayment(transactionId);
+    setError("");
+
+    try {
+      const response = await fetch(
+        `/api/transactions/${transactionId}/payment`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            amount,
+            method,
+          }),
+        },
+      );
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "Unable to record payment.");
+      }
+
+      await loadRequests();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to record payment.",
+      );
+    } finally {
+      setRecordingPayment(null);
     }
   }
 
@@ -480,11 +592,100 @@ export default function RecyclerRequestsPage() {
                       </span>
                     </p>
 
+                    {transaction.status === "COLLECTOR_CONFIRMED" && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          confirmRecyclerHandover(transaction.id)
+                        }
+                        disabled={confirmingTransaction === transaction.id}
+                        className="mt-5 w-full rounded-xl bg-emerald-600 px-4 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {confirmingTransaction === transaction.id
+                          ? "Confirming..."
+                          : "Confirm Handover"}
+                      </button>
+                    )}
+
+                    {transaction.status === "RECYCLER_CONFIRMED" && (
+                      <button
+                        type="button"
+                        onClick={() => completeTransaction(transaction.id)}
+                        disabled={completingTransaction === transaction.id}
+                        className="mt-5 w-full rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {completingTransaction === transaction.id
+                          ? "Completing..."
+                          : "Complete Transaction"}
+                      </button>
+                    )}
+
                     {transaction.completedAt && (
                       <p className="mt-2 text-sm text-slate-500">
                         Completed {formatDate(transaction.completedAt)}
                       </p>
                     )}
+
+                    {transaction.status === "COMPLETED" &&
+                      transaction.paymentStatus !== "RECORDED" && (
+                        <div className="mt-5 rounded-xl bg-slate-50 p-4">
+                          <p className="text-sm font-semibold text-slate-800">
+                            Record Payment
+                          </p>
+                          <p className="mt-1 text-sm text-slate-500">
+                            Enter the actual amount paid to the collector.
+                          </p>
+
+                          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                            <input
+                              type="number"
+                              min="0.01"
+                              step="0.01"
+                              value={paymentAmounts[transaction.id] ?? quote?.amount ?? ""}
+                              onChange={(event) =>
+                                setPaymentAmounts((current) => ({
+                                  ...current,
+                                  [transaction.id]: event.target.value,
+                                }))
+                              }
+                              placeholder="Amount"
+                              className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
+                            />
+
+                            <select
+                              value={paymentMethods[transaction.id] ?? ""}
+                              onChange={(event) =>
+                                setPaymentMethods((current) => ({
+                                  ...current,
+                                  [transaction.id]: event.target.value,
+                                }))
+                              }
+                              className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
+                            >
+                              <option value="">Select payment method</option>
+                              <option value="CASH">Cash</option>
+                              <option value="UPI">UPI</option>
+                              <option value="BANK_TRANSFER">Bank transfer</option>
+                            </select>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              recordPayment(
+                                transaction.id,
+                                quote?.amount ?? "",
+                              )
+                            }
+                            disabled={recordingPayment === transaction.id}
+                            className="mt-4 w-full rounded-xl bg-emerald-600 px-4 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {recordingPayment === transaction.id
+                              ? "Recording..."
+                              : "Record Payment"}
+                          </button>
+                        </div>
+                      )}
                   </div>
                 )}
               </section>

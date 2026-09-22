@@ -1,87 +1,88 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-
-type User = {
-  id: string;
-  phone: string;
-  role: string;
-};
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useLanguage } from "@/lib/i18n/use-language";
+import type { Language } from "@/lib/i18n/translations";
 
 type Profile = {
-  id: string;
-  userId: string;
   fullName: string | null;
-  language: string | null;
+  language: Language | null;
 };
 
 export default function CollectorProfilePage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [fullName, setFullName] = useState("");
-  const [language, setLanguage] = useState("");
+  const { t, language, setLanguage } = useLanguage();
+  const router = useRouter();
+
+  const [profile, setProfile] = useState<Profile>({
+    fullName: "",
+    language: "English",
+  });
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("kabadiwala_user");
+    async function loadProfile() {
+      try {
+        const response = await fetch("/api/profile");
 
-    if (!storedUser) {
-      setError("Please log in before editing your profile.");
-      setLoading(false);
-      return;
-    }
+        if (!response.ok) {
+          setMessage(t("authenticationRequired"));
+          return;
+        }
 
-    try {
-      const parsedUser = JSON.parse(storedUser) as User;
-      setUser(parsedUser);
+        const data = await response.json();
 
-      if (parsedUser.role !== "COLLECTOR") {
-        setError("This profile page is currently for collector accounts.");
-        setLoading(false);
-        return;
-      }
-
-      fetch(`/api/profile?userId=${encodeURIComponent(parsedUser.id)}`)
-        .then(async (response) => {
-          const data = await response.json();
-
-          if (!response.ok || !data.ok) {
-            throw new Error(data.error || "Unable to load profile.");
+        if (data.ok) {
+          if (data.user?.phone) {
+            setPhone(data.user.phone);
           }
 
-          const existingProfile = data.profile as Profile | null;
+          if (!data.profile) {
+            setLoading(false);
+            return;
+          }
 
-          setFullName(existingProfile?.fullName ?? "");
-          setLanguage(existingProfile?.language ?? "");
-        })
-        .catch((err) => {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Unable to load profile.",
-          );
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    } catch {
-      setError("Your local session could not be read.");
-      setLoading(false);
-    }
-  }, []);
+          const savedLanguage =
+            data.profile.language === "Hindi" ||
+            data.profile.language === "Marathi" ||
+            data.profile.language === "English"
+              ? data.profile.language
+              : "English";
 
-  async function saveProfile(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+          setProfile({
+            fullName: data.profile.fullName ?? "",
+            language: savedLanguage,
+          });
 
-    if (!user) {
-      setError("Please log in before saving your profile.");
-      return;
+          setLanguage(savedLanguage);
+        }
+      } catch {
+        setMessage(t("authenticationRequired"));
+      } finally {
+        setLoading(false);
+      }
     }
 
+    loadProfile();
+  }, [setLanguage, t]);
+
+  async function handleLogout() {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+    } finally {
+      localStorage.removeItem("kabadiwala_user");
+      localStorage.removeItem("kabadiwala_language");
+      router.replace("/login");
+    }
+  }
+
+  async function handleSave() {
     setSaving(true);
-    setError("");
     setMessage("");
 
     try {
@@ -91,23 +92,22 @@ export default function CollectorProfilePage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          userId: user.id,
-          fullName,
-          language,
+          fullName: profile.fullName,
+          language: profile.language,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok || !data.ok) {
-        throw new Error(data.error || "Unable to save profile.");
+        setMessage(data.error ?? t("authenticationRequired"));
+        return;
       }
 
-      setMessage("Profile saved successfully.");
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Unable to save profile.",
-      );
+      setLanguage(profile.language ?? "English");
+      setMessage(t("profileSaved"));
+    } catch {
+      setMessage(t("authenticationRequired"));
     } finally {
       setSaving(false);
     }
@@ -115,110 +115,117 @@ export default function CollectorProfilePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900">
-        <div className="mx-auto max-w-2xl">
-          <p className="text-slate-500">Loading profile...</p>
+      <main className="min-h-screen bg-slate-50 p-6">
+        <div className="mx-auto max-w-md rounded-2xl bg-white p-6 shadow-sm">
+          <p className="text-sm text-slate-600">{t("loadingProfile")}</p>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900">
-      <div className="mx-auto max-w-2xl">
-        <p className="text-lg font-medium text-emerald-700">
-          Kabadiwala Connect
-        </p>
+    <main className="min-h-screen bg-slate-50 p-6">
+      <div className="mx-auto max-w-md">
+        <div className="mb-6">
+          <p className="text-sm font-medium text-green-700">{t("appName")}</p>
+          <h1 className="mt-1 text-2xl font-bold text-slate-900">
+            {t("profile")}
+          </h1>
+        </div>
 
-        <h1 className="mt-4 text-4xl font-bold tracking-tight">
-          My Profile
-        </h1>
-
-        <p className="mt-3 text-lg text-slate-600">
-          Keep your collector information up to date.
-        </p>
-
-        {error && (
-          <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-red-700">
-            {error}
-          </div>
-        )}
-
-        {message && (
-          <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-emerald-800">
-            {message}
-          </div>
-        )}
-
-        {user && (
-          <form
-            onSubmit={saveProfile}
-            className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-          >
+        <div className="rounded-2xl bg-white p-6 shadow-sm">
+          <div className="space-y-5">
             <div>
               <label
-                htmlFor="phone"
-                className="text-sm font-medium text-slate-700"
+                htmlFor="mobile"
+                className="mb-2 block text-sm font-medium text-slate-700"
               >
-                Mobile number
+                {t("mobileNumber")}
               </label>
-
               <input
-                id="phone"
-                value={user.phone}
+                id="mobile"
+                type="tel"
                 disabled
-                className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-100 px-4 py-3 text-slate-600"
+                value={phone}
+                placeholder={t("mobileNumber")}
+                className="w-full rounded-xl border border-slate-200 bg-slate-100 px-4 py-3 text-slate-500 outline-none"
               />
             </div>
 
-            <div className="mt-5">
+            <div>
               <label
                 htmlFor="fullName"
-                className="text-sm font-medium text-slate-700"
+                className="mb-2 block text-sm font-medium text-slate-700"
               >
-                Full name
+                {t("fullName")}
               </label>
-
               <input
                 id="fullName"
-                value={fullName}
-                onChange={(event) => setFullName(event.target.value)}
+                type="text"
+                value={profile.fullName ?? ""}
+                onChange={(event) =>
+                  setProfile((current) => ({
+                    ...current,
+                    fullName: event.target.value,
+                  }))
+                }
+                placeholder={t("enterName")}
                 maxLength={100}
-                className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 outline-none focus:border-emerald-600"
-                placeholder="Enter your name"
+                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none focus:border-green-600"
               />
             </div>
 
-            <div className="mt-5">
+            <div>
               <label
                 htmlFor="language"
-                className="text-sm font-medium text-slate-700"
+                className="mb-2 block text-sm font-medium text-slate-700"
               >
-                Preferred language
+                {t("preferredLanguage")}
               </label>
-
               <select
                 id="language"
-                value={language}
-                onChange={(event) => setLanguage(event.target.value)}
-                className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 outline-none focus:border-emerald-600"
+                value={profile.language ?? language}
+                onChange={(event) => {
+                  const nextLanguage = event.target.value as Language;
+
+                  setProfile((current) => ({
+                    ...current,
+                    language: nextLanguage,
+                  }));
+
+                  setLanguage(nextLanguage);
+                }}
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-green-600"
               >
-                <option value="">Select language</option>
-                <option value="Hindi">Hindi</option>
-                <option value="Marathi">Marathi</option>
-                <option value="English">English</option>
+                <option value="English">{t("english")}</option>
+                <option value="Hindi">{t("hindi")}</option>
+                <option value="Marathi">{t("marathi")}</option>
               </select>
             </div>
 
+            {message && (
+              <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                {message}
+              </p>
+            )}
+
             <button
-              type="submit"
+              type="button"
+              onClick={handleSave}
               disabled={saving}
-              className="mt-6 w-full rounded-lg bg-emerald-700 px-5 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-xl bg-green-700 px-4 py-3 font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {saving ? "Saving..." : "Save Profile"}
+              {saving ? t("saving") : t("saveProfile")}
             </button>
-          </form>
-        )}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full rounded-xl border border-red-200 bg-white px-4 py-3 font-semibold text-red-700 transition hover:bg-red-50"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
       </div>
     </main>
   );

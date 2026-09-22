@@ -22,6 +22,9 @@ export async function GET() {
     return Response.json({
       ok: true,
       profile: profile ?? null,
+      user: {
+        phone: currentUser.phone,
+      },
     });
   } catch (error) {
     console.error("GET PROFILE ERROR:", error);

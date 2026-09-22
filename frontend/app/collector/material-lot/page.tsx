@@ -3,42 +3,45 @@
 import { ChangeEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/lib/i18n/use-language";
+import type { TranslationKey } from "@/lib/i18n/translations";
 
-const materials = [
+const materials: Array<{ id: string; nameKey: TranslationKey; icon: string; descriptionKey: TranslationKey }> = [
   {
     id: "E_WASTE",
-    name: "E-Waste",
+    nameKey: "eWaste",
     icon: "💻",
-    description: "Electronic items and devices",
+    descriptionKey: "electronicItemsDevices",
   },
   {
     id: "PLASTIC",
-    name: "Plastic",
+    nameKey: "plastic",
     icon: "🧴",
-    description: "Plastic bottles and materials",
+    descriptionKey: "plasticBottlesMaterials",
   },
   {
     id: "METAL",
-    name: "Metal",
+    nameKey: "metal",
     icon: "🔩",
-    description: "Iron, steel and other metals",
+    descriptionKey: "ironSteelMetals",
   },
   {
     id: "PAPER",
-    name: "Paper",
+    nameKey: "paper",
     icon: "📄",
-    description: "Paper, cardboard and books",
+    descriptionKey: "paperCardboardBooks",
   },
   {
     id: "OTHER",
-    name: "Other",
+    nameKey: "other",
     icon: "📦",
-    description: "Other recyclable material",
+    descriptionKey: "otherRecyclableMaterial",
   },
 ];
 
 export default function CreateMaterialLotPage() {
   const router = useRouter();
+  const { t } = useLanguage();
 
   const [material, setMaterial] = useState("");
   const [weight, setWeight] = useState("");
@@ -67,7 +70,7 @@ export default function CreateMaterialLotPage() {
 
     reader.onerror = () => {
       setPhotoDataUrl("");
-      setError("Unable to read the selected photo.");
+      setError(t("unableToReadPhoto"));
     };
 
     reader.readAsDataURL(file);
@@ -77,14 +80,14 @@ export default function CreateMaterialLotPage() {
     setError("");
 
     if (!material) {
-      setError("Please select a material.");
+      setError(t("pleaseSelectMaterial"));
       return;
     }
 
     const weightKg = Number(weight);
 
     if (!Number.isFinite(weightKg) || weightKg <= 0) {
-      setError("Enter a weight greater than 0 kg.");
+      setError(t("enterWeightGreaterThanZero"));
       return;
     }
 
@@ -108,7 +111,7 @@ export default function CreateMaterialLotPage() {
       setError(
         err instanceof Error
           ? err.message
-          : "Unable to continue to the review step.",
+          : t("unableToContinueReview"),
       );
       setSaving(false);
     }
@@ -136,11 +139,11 @@ export default function CreateMaterialLotPage() {
 
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-green-700">
-              Kabadiwala Connect
+              {t("appName")}
             </p>
 
             <h1 className="text-lg font-bold text-gray-900">
-              Create Material Lot
+              {t("createMaterialLot")}
             </h1>
           </div>
         </div>
@@ -151,11 +154,11 @@ export default function CreateMaterialLotPage() {
         <section className="mb-6">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-green-700">
-              Material details
+              {t("materialDetails")}
             </span>
 
             <span className="text-xs font-medium text-gray-400">
-              Step 1 of 3
+              {t("stepOfThree")}
             </span>
           </div>
 
@@ -167,11 +170,11 @@ export default function CreateMaterialLotPage() {
         {/* Material */}
         <section>
           <h2 className="text-lg font-bold text-gray-900">
-            What material do you have?
+            {t("whatMaterial")}
           </h2>
 
           <p className="mt-1 text-sm leading-5 text-gray-600">
-            Select the closest category.
+            {t("selectClosestCategory")}
           </p>
 
           <div className="mt-4 grid grid-cols-2 gap-3">
@@ -192,16 +195,16 @@ export default function CreateMaterialLotPage() {
                   <div className="text-2xl">{item.icon}</div>
 
                   <h3 className="mt-3 font-bold text-gray-900">
-                    {item.name}
+                    {t(item.nameKey)}
                   </h3>
 
                   <p className="mt-1 text-xs leading-5 text-gray-600">
-                    {item.description}
+                    {t(item.descriptionKey)}
                   </p>
 
                   {selected && (
                     <p className="mt-2 text-xs font-semibold text-green-700">
-                      ✓ Selected
+                      ✓ {t("selected")}
                     </p>
                   )}
                 </button>
@@ -213,11 +216,11 @@ export default function CreateMaterialLotPage() {
         {/* Photo */}
         <section className="mt-7">
           <h2 className="text-lg font-bold text-gray-900">
-            Add a photo
+            {t("addPhoto")}
           </h2>
 
           <p className="mt-1 text-sm leading-5 text-gray-600">
-            A photo can be added for classification and verification.
+            {t("photoClassificationDescription")}
           </p>
 
           <label className="mt-4 flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-white px-4 text-center">
@@ -232,11 +235,11 @@ export default function CreateMaterialLotPage() {
                 <span className="text-4xl">📷</span>
 
                 <span className="mt-2 font-semibold text-gray-900">
-                  Take or choose a photo
+                  {t("takeOrChoosePhoto")}
                 </span>
 
                 <span className="mt-1 text-xs text-gray-500">
-                  JPG or PNG
+                  {t("jpgOrPng")}
                 </span>
               </>
             )}
@@ -253,7 +256,7 @@ export default function CreateMaterialLotPage() {
           {photoName && (
             <div className="mt-3 rounded-xl bg-green-50 p-3">
               <p className="text-sm font-semibold text-green-800">
-                ✓ Photo selected
+                ✓ {t("photoSelected")}
               </p>
 
               <p className="mt-1 truncate text-xs text-green-700">
@@ -266,11 +269,11 @@ export default function CreateMaterialLotPage() {
         {/* Weight */}
         <section className="mt-7">
           <h2 className="text-lg font-bold text-gray-900">
-            Approximate weight
+            {t("approximateWeight")}
           </h2>
 
           <p className="mt-1 text-sm leading-5 text-gray-600">
-            You can update the final weight during handover.
+            {t("updateWeightDuringHandover")}
           </p>
 
           <div className="mt-4 flex">
@@ -286,7 +289,7 @@ export default function CreateMaterialLotPage() {
             />
 
             <div className="flex items-center rounded-r-2xl border border-l-0 border-gray-300 bg-gray-100 px-5 font-semibold text-gray-700">
-              kg
+              {t("kg")}
             </div>
           </div>
         </section>
@@ -295,21 +298,21 @@ export default function CreateMaterialLotPage() {
         {selectedMaterial && weight && (
           <section className="mt-7 rounded-2xl bg-green-50 p-4">
             <p className="text-xs font-bold uppercase tracking-wide text-green-700">
-              Lot Preview
+              {t("lotPreview")}
             </p>
 
             <div className="mt-3">
               <p className="font-bold text-gray-900">
-                {selectedMaterial.icon} {selectedMaterial.name}
+                {selectedMaterial.icon} {t(selectedMaterial.nameKey)}
               </p>
 
               <p className="mt-1 text-sm text-gray-600">
-                Approx. {weight} kg
+                {t("approx")} {weight} {t("kg")}
               </p>
 
               {photoName && (
                 <p className="mt-1 text-sm text-green-700">
-                  📷 Photo added
+                  📷 {t("photoAdded")}
                 </p>
               )}
             </div>
@@ -330,12 +333,11 @@ export default function CreateMaterialLotPage() {
           onClick={handleContinue}
           className="mt-7 w-full rounded-2xl bg-green-700 px-6 py-4 font-bold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-gray-300"
         >
-          {saving ? "Opening review..." : "Continue to Review"}
+          {saving ? t("openingReview") : t("continueToReview")}
         </button>
 
         <p className="mt-3 text-center text-xs leading-5 text-gray-500">
-          Your information will be reviewed before the material lot is
-          created.
+          {t("informationReviewNotice")}
         </p>
       </div>
     </main>

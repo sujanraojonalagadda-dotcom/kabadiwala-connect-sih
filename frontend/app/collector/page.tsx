@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useLanguage } from "@/lib/i18n/use-language";
 
 type MaterialLot = {
   id: string;
@@ -38,6 +39,7 @@ function formatDate(value: string) {
 }
 
 export default function CollectorDashboard() {
+  const { language, changeLanguage, t } = useLanguage();
   const [lots, setLots] = useState<MaterialLot[]>([]);
   const [loadingLots, setLoadingLots] = useState(true);
   const [lotsError, setLotsError] = useState("");
@@ -115,11 +117,11 @@ export default function CollectorDashboard() {
 
             <div>
               <p className="text-xs font-semibold text-green-700">
-                KABADIWALA CONNECT
+                {t("appName").toUpperCase()}
               </p>
 
               <h1 className="text-base font-bold text-gray-900">
-                Collector
+                {t("collector")}
               </h1>
             </div>
           </div>
@@ -139,15 +141,15 @@ export default function CollectorDashboard() {
         {/* Welcome */}
         <section className="rounded-2xl bg-green-700 p-5 text-white shadow-sm">
           <p className="text-sm text-green-100">
-            Welcome back 👋
+            {t("welcomeBack")} 👋
           </p>
 
           <h2 className="mt-1 text-2xl font-bold">
-            Ready to recycle?
+            {t("readyToRecycle")}
           </h2>
 
           <p className="mt-2 text-sm leading-6 text-green-50">
-            Create a material lot and connect with formal recyclers.
+            {t("recycleDescription")}
           </p>
         </section>
 
@@ -155,7 +157,7 @@ export default function CollectorDashboard() {
         <section className="mt-5 grid grid-cols-2 gap-3">
           <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              My Lots
+              {t("myLots")}
             </p>
 
             {loadingLots ? (
@@ -169,7 +171,7 @@ export default function CollectorDashboard() {
 
           <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Total Weight
+              {t("totalWeight")}
             </p>
 
             {loadingLots ? (
@@ -198,11 +200,11 @@ export default function CollectorDashboard() {
 
               <div className="min-w-0 flex-1">
                 <h3 className="text-lg font-bold text-gray-900">
-                  Create Material Lot
+                  {t("createMaterialLot")}
                 </h3>
 
                 <p className="mt-1 text-sm leading-5 text-gray-600">
-                  Add material, photo, weight and details.
+                  {t("addMaterialDetails")}
                 </p>
               </div>
 
@@ -217,21 +219,21 @@ export default function CollectorDashboard() {
         <section className="mt-6">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="px-1 text-base font-bold text-gray-900">
-              Recent Material Lots
+              {t("recentMaterialLots")}
             </h2>
 
             <Link
               href="/collector/material-lot"
               className="text-xs font-semibold text-green-700"
             >
-              Create new
+              {t("createNew")}
             </Link>
           </div>
 
           {loadingLots && (
             <div className="rounded-2xl bg-white p-5 text-center shadow-sm ring-1 ring-gray-200">
               <p className="text-sm text-gray-500">
-                Loading your real material lots...
+                {t("loadingMaterialLots")}
               </p>
             </div>
           )}
@@ -239,7 +241,7 @@ export default function CollectorDashboard() {
           {!loadingLots && lotsError && (
             <div className="rounded-2xl bg-red-50 p-4 ring-1 ring-red-100">
               <p className="text-sm font-semibold text-red-700">
-                Unable to load material lots
+                {t("unableToLoadMaterialLots")}
               </p>
 
               <p className="mt-1 text-xs leading-5 text-red-600">
@@ -257,11 +259,11 @@ export default function CollectorDashboard() {
                 </div>
 
                 <h3 className="mt-3 font-bold text-gray-900">
-                  No material lots yet
+                  {t("noMaterialLots")}
                 </h3>
 
                 <p className="mt-1 text-sm leading-5 text-gray-600">
-                  Create your first material lot to start building
+                  {t("createFirstLot")}
                   your recycling history.
                 </p>
 
@@ -269,7 +271,7 @@ export default function CollectorDashboard() {
                   href="/collector/material-lot"
                   className="mt-4 inline-block rounded-xl bg-green-700 px-4 py-3 text-sm font-bold text-white"
                 >
-                  Create Material Lot
+                  {t("createMaterialLot")}
                 </Link>
               </div>
             )}
@@ -311,7 +313,7 @@ export default function CollectorDashboard() {
                       </div>
 
                       <span className="rounded-full bg-green-50 px-2.5 py-1 text-[10px] font-bold uppercase text-green-700">
-                        Recorded
+                        {t("recorded")}
                       </span>
                     </div>
                   </div>
@@ -320,14 +322,14 @@ export default function CollectorDashboard() {
             )}
         </section>
 
-        {/* Quick Actions */}
+        {/* {t("quickActions")} */}
         <section className="mt-6">
           <h2 className="mb-3 px-1 text-base font-bold text-gray-900">
-            Quick Actions
+            {t("quickActions")}
           </h2>
 
           <div className="space-y-3">
-            {/* Find Recyclers */}
+            {/* {t("findRecyclers")} */}
             <Link
               href="/collector/recyclers"
               className="flex w-full items-center gap-4 rounded-2xl bg-white p-4 text-left shadow-sm ring-1 ring-gray-200 active:bg-gray-50"
@@ -338,11 +340,11 @@ export default function CollectorDashboard() {
 
               <div className="min-w-0 flex-1">
                 <h3 className="font-bold text-gray-900">
-                  Find Recyclers
+                  {t("findRecyclers")}
                 </h3>
 
                 <p className="mt-1 text-sm text-gray-600">
-                  Discover formal recycling partners.
+                  {t("discoverRecyclers")}
                 </p>
               </div>
 
@@ -352,8 +354,8 @@ export default function CollectorDashboard() {
             </Link>
 
             {/* Earnings */}
-            <button
-              type="button"
+            <Link
+              href="/collector/earnings"
               className="flex w-full items-center gap-4 rounded-2xl bg-white p-4 text-left shadow-sm ring-1 ring-gray-200 active:bg-gray-50"
             >
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-yellow-50 text-xl">
@@ -362,20 +364,20 @@ export default function CollectorDashboard() {
 
               <div className="min-w-0 flex-1">
                 <h3 className="font-bold text-gray-900">
-                  My Earnings
+                  {t("myEarnings")}
                 </h3>
 
                 <p className="mt-1 text-sm text-gray-600">
-                  View payments and earnings.
+                  {t("viewPayments")}
                 </p>
               </div>
 
               <span className="text-lg text-gray-400">
                 →
               </span>
-            </button>
+            </Link>
 
-            {/* Transactions */}
+            {/* {t("transactions")} */}
             <Link
               href="/collector/requests"
               className="flex w-full items-center gap-4 rounded-2xl bg-white p-4 text-left shadow-sm ring-1 ring-gray-200 active:bg-gray-50"
@@ -386,11 +388,11 @@ export default function CollectorDashboard() {
 
               <div className="min-w-0 flex-1">
                 <h3 className="font-bold text-gray-900">
-                  Transactions
+                  {t("transactions")}
                 </h3>
 
                 <p className="mt-1 text-sm text-gray-600">
-                  Track your recycling transactions.
+                  {t("trackTransactions")}
                 </p>
               </div>
 
@@ -410,15 +412,15 @@ export default function CollectorDashboard() {
 
             <div className="min-w-0 flex-1">
               <h3 className="text-sm font-bold text-gray-900">
-                Connection Status
+                {t("connectionStatus")}
               </h3>
 
               <p className="mt-1 text-xs text-gray-600">
                 {loadingLots
-                  ? "Checking connection..."
+                  ? t("checkingConnection")
                   : lotsError
-                    ? "Unable to synchronize with the server."
-                    : "Your latest information is synchronized."}
+                    ? t("unableToSynchronize")
+                    : t("informationSynchronized")}
               </p>
             </div>
 
@@ -432,38 +434,47 @@ export default function CollectorDashboard() {
               }`}
             >
               {loadingLots
-                ? "SYNCING"
+                ? t("syncing")
                 : lotsError
-                  ? "SYNC FAILED"
-                  : "SYNCED"}
+                  ? t("syncFailed")
+                  : t("synced")}
             </span>
           </div>
         </section>
 
-        {/* Language */}
+        {/* {t("language")} */}
         <section className="mt-6 text-center">
           <p className="text-xs text-gray-500">
-            Language
+            {t("language")}
           </p>
 
           <div className="mt-2 flex justify-center gap-5 text-sm">
             <button
               type="button"
-              className="font-semibold text-green-700"
+              onClick={() => changeLanguage("Hindi")}
+              className={`font-semibold ${
+                language === "Hindi" ? "text-green-700" : "text-gray-500"
+              }`}
             >
               हिंदी
             </button>
 
             <button
               type="button"
-              className="font-semibold text-green-700"
+              onClick={() => changeLanguage("Marathi")}
+              className={`font-semibold ${
+                language === "Marathi" ? "text-green-700" : "text-gray-500"
+              }`}
             >
               मराठी
             </button>
 
             <button
               type="button"
-              className="font-medium text-gray-700"
+              onClick={() => changeLanguage("English")}
+              className={`font-semibold ${
+                language === "English" ? "text-green-700" : "text-gray-500"
+              }`}
             >
               English
             </button>
