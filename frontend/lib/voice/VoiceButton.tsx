@@ -37,8 +37,25 @@ export default function VoiceButton({
 
     window.speechSynthesis.cancel();
 
+    const locale = languageMap[language];
+    const voices = window.speechSynthesis.getVoices();
+    const exactVoice = voices.find(
+      (voice) => voice.lang.toLowerCase() === locale.toLowerCase(),
+    );
+    const languageVoice = voices.find(
+      (voice) =>
+        voice.lang.toLowerCase().split("-")[0] ===
+        locale.toLowerCase().split("-")[0],
+    );
+
+    if (language === "Marathi" && !exactVoice && !languageVoice) {
+      window.alert("Marathi voice is not available on this device.");
+      return;
+    }
+
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = languageMap[language];
+    utterance.lang = locale;
+    utterance.voice = exactVoice ?? languageVoice ?? null;
     utterance.rate = 0.9;
     utterance.pitch = 1;
 

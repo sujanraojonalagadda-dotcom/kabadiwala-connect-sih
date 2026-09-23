@@ -235,7 +235,7 @@ export default function CreateMaterialLotPage() {
             {photoDataUrl ? (
               <img
                 src={photoDataUrl}
-                alt="Selected material"
+                alt={t("selectedMaterial")}
                 className="h-32 w-full rounded-xl object-cover"
               />
             ) : (

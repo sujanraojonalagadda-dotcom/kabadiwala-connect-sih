@@ -39,7 +39,7 @@ export default function MaterialLotReviewPage() {
       );
 
       if (!storedDraft) {
-        throw new Error("Your material lot draft was not found.");
+        throw new Error(t("materialLotDraftNotFound"));
       }
 
       const parsedDraft = JSON.parse(storedDraft) as MaterialLotDraft;
@@ -49,7 +49,7 @@ export default function MaterialLotReviewPage() {
         !Number.isFinite(Number(parsedDraft.weightKg)) ||
         Number(parsedDraft.weightKg) <= 0
       ) {
-        throw new Error("The material lot draft is incomplete.");
+        throw new Error(t("materialLotDraftIncomplete"));
       }
 
       setDraft(parsedDraft);
@@ -58,7 +58,7 @@ export default function MaterialLotReviewPage() {
       setError(
         err instanceof Error
           ? err.message
-          : "Unable to load the material lot draft.",
+          : t("unableToLoadMaterialLotDraft"),
       );
     } finally {
       setLoading(false);
@@ -91,7 +91,7 @@ export default function MaterialLotReviewPage() {
 
   async function handleSubmit() {
     if (!draft || !classification) {
-      setError("Please select a material category.");
+      setError(t("pleaseSelectMaterialCategory"));
       return;
     }
 
@@ -102,13 +102,13 @@ export default function MaterialLotReviewPage() {
       const storedUser = localStorage.getItem("kabadiwala_user");
 
       if (!storedUser) {
-        throw new Error("Your login session was not found.");
+        throw new Error(t("loginSessionNotFound"));
       }
 
       const user = JSON.parse(storedUser);
 
       if (!user?.id) {
-        throw new Error("Your collector account is invalid.");
+        throw new Error(t("collectorAccountInvalid"));
       }
 
       let photoUrl: string | null = null;
@@ -121,7 +121,7 @@ export default function MaterialLotReviewPage() {
         const response = await fetch(draft.photoDataUrl);
 
         if (!response.ok) {
-          throw new Error("Unable to prepare the selected photo.");
+          throw new Error(t("unableToPreparePhoto"));
         }
 
         const blob = await response.blob();
@@ -154,7 +154,7 @@ export default function MaterialLotReviewPage() {
 
         if (!uploadResponse.ok || !uploadData.ok) {
           throw new Error(
-            uploadData.error || "Unable to upload material photo.",
+            uploadData.error || t("unableToUploadPhoto"),
           );
         }
 
@@ -182,7 +182,7 @@ export default function MaterialLotReviewPage() {
 
       if (!createResponse.ok || !createData.ok) {
         throw new Error(
-          createData.error || "Unable to create material lot.",
+          createData.error || t("unableToCreateMaterialLot"),
         );
       }
 
@@ -192,7 +192,7 @@ export default function MaterialLotReviewPage() {
 
       if (!createdLot?.id) {
         throw new Error(
-          "The material lot was created but no Lot ID was returned.",
+          t("lotCreatedNoId"),
         );
       }
 
@@ -207,7 +207,7 @@ export default function MaterialLotReviewPage() {
       setError(
         err instanceof Error
           ? err.message
-          : "Unable to create material lot.",
+          : t("unableToCreateMaterialLot"),
       );
     } finally {
       setSubmitting(false);

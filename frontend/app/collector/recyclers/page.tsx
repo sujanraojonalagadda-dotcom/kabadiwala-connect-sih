@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 
+import { useLanguage } from "@/lib/i18n/use-language";
+
+import type { TranslationKey } from "@/lib/i18n/translations";
+
 type Recycler = {
   id: string;
   userId: string;
@@ -19,19 +23,24 @@ type MaterialLot = {
   createdAt: string;
 };
 
-const materialNames: Record<string, string> = {
-  E_WASTE: "E-Waste",
-  PLASTIC: "Plastic",
-  METAL: "Metal",
-  PAPER: "Paper",
-  OTHER: "Other",
+const materialNameKeys: Record<string, TranslationKey> = {
+  E_WASTE: "eWaste",
+  PLASTIC: "plastic",
+  METAL: "metal",
+  PAPER: "paper",
+  OTHER: "other",
 };
 
-function formatMaterial(material: string) {
-  return materialNames[material] || material;
+function formatMaterial(
+  material: string,
+  t: (key: TranslationKey) => string,
+) {
+  const key = materialNameKeys[material];
+  return key ? t(key) : material;
 }
 
 export default function RecyclersPage() {
+  const { t } = useLanguage();
   const [recyclers, setRecyclers] = useState<Recycler[]>([]);
   const [materialLots, setMaterialLots] = useState<MaterialLot[]>([]);
   const [selectedLotId, setSelectedLotId] = useState("");
@@ -57,13 +66,13 @@ export default function RecyclersPage() {
 
         if (!recyclersResponse.ok || !recyclersData.ok) {
           throw new Error(
-            recyclersData.error || "Unable to load recyclers.",
+            recyclersData.error || t("unableToLoadRecyclers"),
           );
         }
 
         if (!lotsResponse.ok || !lotsData.ok) {
           throw new Error(
-            lotsData.error || "Unable to load material lots.",
+            lotsData.error || t("unableToLoadMaterialLots"),
           );
         }
 
@@ -77,7 +86,7 @@ export default function RecyclersPage() {
         setError(
           err instanceof Error
             ? err.message
-            : "Unable to load recycler information.",
+            : t("unableToLoadRecyclerInfo"),
         );
       } finally {
         setLoading(false);
@@ -89,7 +98,7 @@ export default function RecyclersPage() {
 
   async function sendRequest() {
     if (!selectedLotId || !selectedRecyclerId) {
-      setError("Select a material lot and recycler first.");
+      setError(t("selectLotAndRecyclerFirst"));
       setSuccess("");
       return;
     }
@@ -114,18 +123,16 @@ export default function RecyclersPage() {
 
       if (!response.ok || !data.ok) {
         throw new Error(
-          data.error || "Unable to send recycling request.",
+          data.error || t("unableToSendRecyclingRequest"),
         );
       }
 
-      setSuccess(
-        "Recycling request sent successfully. The recycler can now review your material.",
-      );
+      setSuccess(t("recyclingRequestSentSuccessfully"));
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Unable to send recycling request.",
+          : t("unableToSendRecyclingRequest"),
       );
     } finally {
       setSubmitting(false);
@@ -140,17 +147,17 @@ export default function RecyclersPage() {
             Kabadiwala Connect
           </p>
           <h1 className="mt-1 text-2xl font-bold text-gray-900">
-            Find Recyclers
+            {t("findRecyclers")}
           </h1>
           <p className="mt-2 text-sm text-gray-600">
-            Send a real recycling request for one of your material lots.
+            {t("findRecyclersDescription")}
           </p>
         </header>
 
         {loading && (
           <section className="rounded-2xl border border-gray-200 bg-white p-5 text-center">
             <p className="text-sm text-gray-600">
-              Loading your material lots and verified recyclers...
+              {t("loadingMaterialLotsAndRecyclers")}
             </p>
           </section>
         )}
@@ -158,7 +165,7 @@ export default function RecyclersPage() {
         {!loading && error && (
           <section className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4">
             <p className="text-sm font-medium text-red-800">
-              Unable to continue
+              {t("unableToContinue")}
             </p>
             <p className="mt-1 text-sm text-red-700">{error}</p>
           </section>
@@ -167,7 +174,7 @@ export default function RecyclersPage() {
         {!loading && success && (
           <section className="mb-4 rounded-2xl border border-green-200 bg-green-50 p-4">
             <p className="text-sm font-medium text-green-800">
-              Request sent
+              {t("requestSent")}
             </p>
             <p className="mt-1 text-sm text-green-700">{success}</p>
           </section>
@@ -179,7 +186,7 @@ export default function RecyclersPage() {
               ♻️
             </div>
             <h2 className="mt-4 text-lg font-semibold text-gray-900">
-              No material lots available
+              {t("noMaterialLotsAvailable")}
             </h2>
             <p className="mt-2 text-sm leading-6 text-gray-600">
               Create a material lot first, then return here to connect with a
@@ -192,10 +199,10 @@ export default function RecyclersPage() {
           <>
             <section className="mb-5 rounded-2xl border border-gray-200 bg-white p-4">
               <h2 className="text-base font-semibold text-gray-900">
-                1. Select material lot
+                {t("selectMaterialLot")}
               </h2>
               <p className="mt-1 text-sm text-gray-600">
-                Choose one of your recorded material lots.
+                {t("chooseRecordedMaterialLot")}
               </p>
 
               <div className="mt-3 space-y-2">
@@ -213,7 +220,7 @@ export default function RecyclersPage() {
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="font-medium text-gray-900">
-                          {formatMaterial(lot.material)}
+                          {formatMaterial(lot.material, t)}
                         </p>
                         <p className="mt-1 text-sm text-gray-600">
                           {lot.weightKg} kg
@@ -221,7 +228,7 @@ export default function RecyclersPage() {
                       </div>
                       {selectedLotId === lot.id && (
                         <span className="text-sm font-semibold text-green-700">
-                          Selected
+                          {t("selected")}
                         </span>
                       )}
                     </div>
@@ -232,7 +239,7 @@ export default function RecyclersPage() {
 
             <section className="mb-5 rounded-2xl border border-gray-200 bg-white p-4">
               <h2 className="text-base font-semibold text-gray-900">
-                2. Select verified recycler
+                {t("selectVerifiedRecycler")}
               </h2>
               <p className="mt-1 text-sm text-gray-600">
                 Only verified recycler records from the connected database are
@@ -241,7 +248,7 @@ export default function RecyclersPage() {
 
               {recyclers.length === 0 ? (
                 <p className="mt-4 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
-                  No verified recyclers are available yet.
+                  {t("noVerifiedRecyclersAvailable")}
                 </p>
               ) : (
                 <div className="mt-3 space-y-2">
@@ -259,21 +266,21 @@ export default function RecyclersPage() {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="font-semibold text-gray-900">
-                            {recycler.businessName || "Verified Recycler"}
+                            {recycler.businessName || t("verifiedRecycler")}
                           </p>
                           <p className="mt-1 text-sm text-gray-600">
-                            Verified recycler
+                            {t("verifiedRecycler")}
                           </p>
                         </div>
 
                         <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800">
-                          Verified
+                          {t("verified")}
                         </span>
                       </div>
 
                       {selectedRecyclerId === recycler.userId && (
                         <p className="mt-3 text-sm font-medium text-green-700">
-                          Selected
+                          {t("selected")}
                         </p>
                       )}
                     </button>
@@ -293,7 +300,7 @@ export default function RecyclersPage() {
               }
               className="w-full rounded-2xl bg-green-700 px-4 py-4 text-base font-semibold text-white disabled:cursor-not-allowed disabled:bg-gray-300"
             >
-              {submitting ? "Sending request..." : "Send Recycling Request"}
+              {submitting ? t("sendingRequest") : t("sendRecyclingRequest")}
             </button>
           </>
         )}

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useLanguage } from "@/lib/i18n/use-language";
 
+import VoiceButton from "@/lib/voice/VoiceButton";
+
 type MaterialLot = {
   id: string;
   material: string;
@@ -53,13 +55,13 @@ export default function CollectorDashboard() {
         const storedUser = localStorage.getItem("kabadiwala_user");
 
         if (!storedUser) {
-          throw new Error("Your login session was not found.");
+          throw new Error(t("loginSessionNotFound"));
         }
 
         const user = JSON.parse(storedUser);
 
         if (!user?.id) {
-          throw new Error("Your collector account is invalid.");
+          throw new Error(t("collectorAccountInvalid"));
         }
 
         const response = await fetch(
@@ -74,7 +76,7 @@ export default function CollectorDashboard() {
 
         if (!response.ok || !data.ok) {
           throw new Error(
-            data.error || "Unable to load your material lots.",
+            data.error || t("unableToLoadMaterialLots"),
           );
         }
 
@@ -85,7 +87,7 @@ export default function CollectorDashboard() {
         setLotsError(
           error instanceof Error
             ? error.message
-            : "Unable to load your material lots.",
+            : t("unableToLoadMaterialLots"),
         );
       } finally {
         setLoadingLots(false);
@@ -151,6 +153,13 @@ export default function CollectorDashboard() {
           <p className="mt-2 text-sm leading-6 text-green-50">
             {t("recycleDescription")}
           </p>
+          <div className="mt-4">
+            <VoiceButton
+              text={`${t("welcomeBack")}. ${t("readyToRecycle")}. ${t("recycleDescription")}`}
+              language={language}
+              label="🔊 Listen"
+            />
+          </div>
         </section>
 
         {/* Real Lot Summary */}

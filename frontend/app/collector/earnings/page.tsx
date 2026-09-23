@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { useLanguage } from "@/lib/i18n/use-language";
+
 type User = {
   id: string;
   phone: string;
@@ -20,9 +22,9 @@ type Earning = {
   weightKg: string | number | null;
 };
 
-function formatMaterial(material: string | null) {
+function formatMaterial(material: string | null, unavailableLabel: string) {
   if (!material) {
-    return "Material unavailable";
+    return unavailableLabel;
   }
 
   return material
@@ -31,9 +33,9 @@ function formatMaterial(material: string | null) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function formatDate(value: string | null) {
+function formatDate(value: string | null, unavailableLabel: string) {
   if (!value) {
-    return "Date unavailable";
+    return unavailableLabel;
   }
 
   return new Date(value).toLocaleString("en-IN", {
@@ -43,6 +45,7 @@ function formatDate(value: string | null) {
 }
 
 export default function CollectorEarningsPage() {
+  const { language, t } = useLanguage();
   const [user, setUser] = useState<User | null>(null);
   const [earnings, setEarnings] = useState<Earning[]>([]);
   const [totalAmount, setTotalAmount] = useState("0");
@@ -53,7 +56,7 @@ export default function CollectorEarningsPage() {
     const storedUser = localStorage.getItem("kabadiwala_user");
 
     if (!storedUser) {
-      setError("Please log in before viewing earnings.");
+      setError(t("loginRequired"));
       setLoading(false);
       return;
     }
@@ -63,7 +66,7 @@ export default function CollectorEarningsPage() {
       setUser(parsedUser);
 
       if (parsedUser.role !== "COLLECTOR") {
-        setError("This page is available only to collector accounts.");
+        setError(t("collectorAccountInvalid"));
         setLoading(false);
         return;
       }
@@ -75,7 +78,7 @@ export default function CollectorEarningsPage() {
           const data = await response.json();
 
           if (!response.ok || !data.ok) {
-            throw new Error(data.error || "Unable to load earnings.");
+            throw new Error(data.error || t("unableToLoadEarnings"));
           }
 
           setEarnings(data.earnings ?? []);
@@ -85,23 +88,23 @@ export default function CollectorEarningsPage() {
           setError(
             err instanceof Error
               ? err.message
-              : "Unable to load earnings.",
+              : t("unableToLoadEarnings"),
           );
         })
         .finally(() => {
           setLoading(false);
         });
     } catch {
-      setError("Your local session could not be read.");
+      setError(t("authenticationRequired"));
       setLoading(false);
     }
-  }, []);
+  }, [language]);
 
   if (loading) {
     return (
       <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900">
         <div className="mx-auto max-w-4xl">
-          <p className="text-slate-500">Loading earnings...</p>
+          <p className="text-slate-500">{t("loading")}</p>
         </div>
       </main>
     );
@@ -115,11 +118,11 @@ export default function CollectorEarningsPage() {
         </p>
 
         <h1 className="mt-4 text-4xl font-bold tracking-tight">
-          My Earnings
+          {t("myEarnings")}
         </h1>
 
         <p className="mt-3 text-lg text-slate-600">
-          Earnings recorded from completed recycling transactions.
+          {t("earningsRecordedDescription")}
         </p>
 
         {error && (
@@ -132,7 +135,7 @@ export default function CollectorEarningsPage() {
           <>
             <section className="mt-8 rounded-2xl bg-emerald-700 p-6 text-white shadow-sm">
               <p className="text-sm font-medium uppercase tracking-wide text-emerald-100">
-                Total Recorded Earnings
+                {t("totalRecordedEarnings")}
               </p>
 
               <p className="mt-2 text-4xl font-bold">
@@ -140,31 +143,30 @@ export default function CollectorEarningsPage() {
               </p>
 
               <p className="mt-2 text-sm text-emerald-100">
-                Based only on payments recorded in completed transactions.
+                {t("completedPaymentsOnly")}
               </p>
             </section>
 
             <section className="mt-8">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-semibold">
-                  Payment History
+                  {t("paymentHistory")}
                 </h2>
 
                 <span className="text-sm text-slate-500">
                   {earnings.length}{" "}
-                  {earnings.length === 1 ? "payment" : "payments"}
+                  {earnings.length === 1 ? t("payment") : t("payments")}
                 </span>
               </div>
 
               {earnings.length === 0 ? (
                 <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
                   <h3 className="text-lg font-semibold">
-                    No recorded earnings yet
+                    {t("noRecordedEarnings")}
                   </h3>
 
                   <p className="mt-2 text-slate-600">
-                    Earnings will appear here after a completed transaction
-                    has a recorded payment.
+                    {t("earningsAfterPayment")}
                   </p>
                 </div>
               ) : (
@@ -177,17 +179,17 @@ export default function CollectorEarningsPage() {
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                           <p className="text-sm text-slate-500">
-                            {formatMaterial(earning.material)}
+                            {formatMaterial(earning.material, t("materialDetailsUnavailable"))}
                           </p>
 
                           <p className="mt-1 text-lg font-semibold">
                             {earning.weightKg !== null
                               ? `${earning.weightKg} kg`
-                              : "Weight unavailable"}
+                              : t("weightUnavailable")}
                           </p>
 
                           <p className="mt-2 text-sm text-slate-500">
-                            Recorded {formatDate(earning.recordedAt)}
+                            {t("recorded")} {formatDate(earning.recordedAt, t("dateUnavailable"))}
                           </p>
                         </div>
 
@@ -199,21 +201,21 @@ export default function CollectorEarningsPage() {
                       <div className="mt-5 grid gap-3 border-t border-slate-100 pt-4 text-sm text-slate-600 sm:grid-cols-2">
                         <div>
                           <span className="font-medium text-slate-800">
-                            Payment method:
+                            {t("paymentMethod")}:
                           </span>{" "}
-                          {earning.method || "Not specified"}
+                          {earning.method || t("notSpecified")}
                         </div>
 
                         <div>
                           <span className="font-medium text-slate-800">
-                            Completed:
+                            {t("completed")}:
                           </span>{" "}
-                          {formatDate(earning.completedAt)}
+                          {formatDate(earning.completedAt, t("dateUnavailable"))}
                         </div>
                       </div>
 
                       <p className="mt-4 break-all font-mono text-xs text-slate-400">
-                        Transaction: {earning.transactionId}
+                        {t("transactionLabel")}: {earning.transactionId}
                       </p>
                     </article>
                   ))}

@@ -16,15 +16,7 @@ function isLanguage(value: unknown): value is Language {
 }
 
 export function useLanguage() {
-  const [language, setLanguage] = useState<Language>(() => {
-    if (typeof window === "undefined") {
-      return DEFAULT_LANGUAGE;
-    }
-
-    const storedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    return isLanguage(storedLanguage) ? storedLanguage : DEFAULT_LANGUAGE;
-  });
-
+  const [language, setLanguage] = useState<Language>(DEFAULT_LANGUAGE);
   useEffect(() => {
     const storedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY);
     if (isLanguage(storedLanguage)) {

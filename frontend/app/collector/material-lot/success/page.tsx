@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
+import { useLanguage } from "@/lib/i18n/use-language";
+
 function SuccessContent() {
   const searchParams = useSearchParams();
   const lotId = searchParams.get("id");
@@ -60,11 +62,13 @@ function SuccessContent() {
 }
 
 export default function MaterialLotSuccessPage() {
+  const { t } = useLanguage();
+
   return (
     <Suspense
       fallback={
         <main className="flex min-h-screen items-center justify-center bg-gray-50">
-          <p className="text-sm text-gray-600">Loading...</p>
+          <p className="text-sm text-gray-600">{t("loading")}</p>
         </main>
       }
     >

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/lib/i18n/use-language";
 
 type RequestItem = {
   id: string;
@@ -68,6 +69,8 @@ function formatStatus(status: string) {
 }
 
 export default function CollectorRequestsPage() {
+  const { t } = useLanguage();
+
   const [requests, setRequests] = useState<RequestItem[]>([]);
 
   const [quotes, setQuotes] = useState<
@@ -107,7 +110,7 @@ export default function CollectorRequestsPage() {
 
       if (!response.ok || !data.ok) {
         throw new Error(
-          data.error || "Unable to load requests.",
+          data.error || t("unableToLoadRequests"),
         );
       }
 
@@ -175,7 +178,7 @@ export default function CollectorRequestsPage() {
       setError(
         err instanceof Error
           ? err.message
-          : "Unable to load recycling requests.",
+          : t("unableToLoadRecyclingRequests"),
       );
     } finally {
       setLoading(false);
@@ -218,7 +221,7 @@ export default function CollectorRequestsPage() {
 
       if (!response.ok || !data.ok) {
         throw new Error(
-          data.error || "Unable to accept quote.",
+          data.error || t("unableToAcceptQuote"),
         );
       }
 
@@ -227,7 +230,7 @@ export default function CollectorRequestsPage() {
       setError(
         err instanceof Error
           ? err.message
-          : "Unable to accept quote.",
+          : t("unableToAcceptQuote"),
       );
     } finally {
       setActionId(null);
@@ -256,7 +259,7 @@ export default function CollectorRequestsPage() {
       if (!response.ok || !data.ok) {
         throw new Error(
           data.error ||
-            "Unable to create transaction.",
+            t("unableToCreateTransaction"),
         );
       }
 
@@ -265,7 +268,7 @@ export default function CollectorRequestsPage() {
       setError(
         err instanceof Error
           ? err.message
-          : "Unable to create transaction.",
+          : t("unableToCreateTransaction"),
       );
     } finally {
       setActionId(null);
@@ -276,7 +279,7 @@ export default function CollectorRequestsPage() {
     const transaction = transactions[requestId];
 
     if (!transaction) {
-      setError("Transaction not found.");
+      setError(t("transactionNotFound"));
       return;
     }
 
@@ -301,7 +304,7 @@ export default function CollectorRequestsPage() {
       if (!response.ok || !data.ok) {
         throw new Error(
           data.error ||
-            "Unable to initiate handover.",
+            t("unableToInitiateHandover"),
         );
       }
 
@@ -310,7 +313,7 @@ export default function CollectorRequestsPage() {
       setError(
         err instanceof Error
           ? err.message
-          : "Unable to initiate handover.",
+          : t("unableToInitiateHandover"),
       );
     } finally {
       setActionId(null);
@@ -321,7 +324,7 @@ export default function CollectorRequestsPage() {
     const transaction = transactions[requestId];
 
     if (!transaction) {
-      setError("Transaction not found.");
+      setError(t("transactionNotFound"));
       return;
     }
 
@@ -346,7 +349,7 @@ export default function CollectorRequestsPage() {
       if (!response.ok || !data.ok) {
         throw new Error(
           data.error ||
-            "Unable to confirm handover.",
+            t("unableToConfirmHandover"),
         );
       }
 
@@ -355,7 +358,7 @@ export default function CollectorRequestsPage() {
       setError(
         err instanceof Error
           ? err.message
-          : "Unable to confirm handover.",
+          : t("unableToConfirmHandover"),
       );
     } finally {
       setActionId(null);
@@ -440,7 +443,7 @@ export default function CollectorRequestsPage() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                        Request
+                        {t("request")}
                       </p>
 
                       <p className="mt-1 break-all font-mono text-xs text-slate-500">
@@ -457,7 +460,7 @@ export default function CollectorRequestsPage() {
                   <div className="mt-5 grid gap-4 sm:grid-cols-2">
                     <div className="rounded-xl bg-slate-50 p-4">
                       <p className="text-xs text-slate-500">
-                        Material Lot
+                        {t("materialLotLabel")}
                       </p>
 
                       <p className="mt-1 font-medium text-slate-900">
@@ -465,7 +468,7 @@ export default function CollectorRequestsPage() {
                           ? formatMaterial(
                               materialLot.material,
                             )
-                          : "Material details unavailable"}
+                          : t("materialDetailsUnavailable")}
                       </p>
 
                       {materialLot && (
@@ -484,19 +487,18 @@ export default function CollectorRequestsPage() {
 
                     <div className="rounded-xl bg-slate-50 p-4">
                       <p className="text-xs text-slate-500">
-                        Recycler
+                        {t("recycler")}
                       </p>
 
                       <p className="mt-1 font-medium text-slate-900">
-                        {recycler?.businessName ||
-                          "Recycler"}
+                        {recycler?.businessName || t("recyclerUnavailable")}
                       </p>
 
                       {recycler && (
                         <p className="mt-1 text-sm font-semibold text-emerald-700">
                           {recycler.verificationStatus ===
                           "VERIFIED"
-                            ? "Verified"
+                            ? t("verified")
                             : recycler.verificationStatus}
                         </p>
                       )}
@@ -541,8 +543,8 @@ export default function CollectorRequestsPage() {
                           className="mt-4 w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {busy
-                            ? "Accepting..."
-                            : "Accept Quote"}
+                            ? t("accepting")
+                            : t("acceptQuote")}
                         </button>
                       )}
                     </div>
@@ -560,8 +562,8 @@ export default function CollectorRequestsPage() {
                         className="mt-5 w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {busy
-                          ? "Creating..."
-                          : "Create Handover Transaction"}
+                          ? t("creating")
+                          : t("createHandoverTransaction")}
                       </button>
                     )}
 
@@ -595,8 +597,8 @@ export default function CollectorRequestsPage() {
                           className="mt-4 w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
                         >
                           {busy
-                            ? "Starting..."
-                            : "Start Handover"}
+                            ? t("starting")
+                            : t("startHandover")}
                         </button>
                       )}
 
@@ -611,8 +613,8 @@ export default function CollectorRequestsPage() {
                           className="mt-4 w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
                         >
                           {busy
-                            ? "Confirming..."
-                            : "Confirm Handover"}
+                            ? t("confirming")
+                            : t("confirmHandover")}
                         </button>
                       )}
 
@@ -620,11 +622,11 @@ export default function CollectorRequestsPage() {
                         "COMPLETED" && (
                         <div className="mt-4 rounded-xl bg-emerald-50 p-4">
                           <p className="font-semibold text-emerald-800">
-                            Transaction completed
+                            {t("transactionCompleted")}
                           </p>
 
                           <p className="mt-1 text-sm text-slate-600">
-                            Payment status:{" "}
+                            {t("paymentStatus")}:{" "}
                             {formatStatus(
                               transaction.paymentStatus,
                             )}
@@ -632,7 +634,7 @@ export default function CollectorRequestsPage() {
 
                           {transaction.completedAt && (
                             <p className="mt-1 text-xs text-slate-500">
-                              Completed{" "}
+                              {t("completed")}{" "}
                               {new Date(
                                 transaction.completedAt,
                               ).toLocaleString(
