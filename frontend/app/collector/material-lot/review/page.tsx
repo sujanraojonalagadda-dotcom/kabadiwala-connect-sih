@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useLanguage } from "@/lib/i18n/use-language";
+import { savePendingMaterialLot } from "@/lib/offline/material-lot-queue";
 import type { TranslationKey } from "@/lib/i18n/translations";
 
 type MaterialLotDraft = {
@@ -100,23 +101,17 @@ export default function MaterialLotReviewPage() {
 
     try {
       const storedUser = localStorage.getItem("kabadiwala_user");
-
       if (!storedUser) {
         throw new Error(t("loginSessionNotFound"));
       }
 
       const user = JSON.parse(storedUser);
-
       if (!user?.id) {
         throw new Error(t("collectorAccountInvalid"));
       }
 
       let photoUrl: string | null = null;
 
-      /*
-       * Upload the selected photo first.
-       * The server returns the private Storage path.
-       */
       if (draft.photoDataUrl) {
         const response = await fetch(draft.photoDataUrl);
 
@@ -125,7 +120,6 @@ export default function MaterialLotReviewPage() {
         }
 
         const blob = await response.blob();
-
         const extension =
           draft.photoName.split(".").pop()?.toLowerCase() || "jpg";
 
@@ -138,7 +132,6 @@ export default function MaterialLotReviewPage() {
         );
 
         const uploadFormData = new FormData();
-
         uploadFormData.append("file", file);
         uploadFormData.append("collectorId", user.id);
 
@@ -161,10 +154,6 @@ export default function MaterialLotReviewPage() {
         photoUrl = uploadData.path ?? null;
       }
 
-      /*
-       * Create the real material lot only after
-       * the photo upload succeeds.
-       */
       const createResponse = await fetch("/api/material-lots", {
         method: "POST",
         headers: {
@@ -191,9 +180,7 @@ export default function MaterialLotReviewPage() {
         : createData.materialLot;
 
       if (!createdLot?.id) {
-        throw new Error(
-          t("lotCreatedNoId"),
-        );
+        throw new Error(t("lotCreatedNoId"));
       }
 
       sessionStorage.removeItem("kabadiwala_material_lot_draft");
@@ -204,11 +191,40 @@ export default function MaterialLotReviewPage() {
         )}`,
       );
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : t("unableToCreateMaterialLot"),
-      );
+      const isNetworkError =
+        err instanceof TypeError ||
+        (typeof navigator !== "undefined" && !navigator.onLine);
+
+      if (isNetworkError) {
+        try {
+          const storedUser = localStorage.getItem("kabadiwala_user");
+
+          if (storedUser && draft) {
+            const user = JSON.parse(storedUser);
+
+            if (user?.id) {
+              savePendingMaterialLot({
+                collectorId: user.id,
+                material: classification,
+                weightKg: Number(draft.weightKg),
+                photoName: draft.photoName,
+                photoDataUrl: draft.photoDataUrl,
+                photoUrl: null,
+              });
+            }
+          }
+        } catch {
+          // Keep the network error message if local storage also fails.
+        }
+
+        setError(t("savedForLaterSync"));
+      } else {
+        setError(
+          err instanceof Error
+            ? err.message
+            : t("unableToCreateMaterialLot"),
+        );
+      }
     } finally {
       setSubmitting(false);
     }

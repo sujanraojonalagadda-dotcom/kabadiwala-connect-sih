@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useLanguage } from "@/lib/i18n/use-language";
 
 import VoiceButton from "@/lib/voice/VoiceButton";
+import { syncPendingMaterialLots } from "@/lib/offline/material-lot-queue";
+
 
 type MaterialLot = {
   id: string;
@@ -95,6 +97,24 @@ export default function CollectorDashboard() {
     }
 
     loadLots();
+  }, []);
+
+  useEffect(() => {
+    async function syncPendingLots() {
+      const syncedCount = await syncPendingMaterialLots();
+
+      if (syncedCount > 0) {
+        window.location.reload();
+      }
+    }
+
+    syncPendingLots();
+
+    window.addEventListener("online", syncPendingLots);
+
+    return () => {
+      window.removeEventListener("online", syncPendingLots);
+    };
   }, []);
 
   const totalWeight = useMemo(() => {
