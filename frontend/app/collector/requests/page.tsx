@@ -384,13 +384,23 @@ export default function CollectorRequestsPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="w-fit rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-700 transition hover:bg-slate-100"
-          >
-            Logout
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => window.location.assign("/collector")}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            >
+              ← {t("backToDashboard")}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-fit rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-700 transition hover:bg-slate-100"
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
         {error && (

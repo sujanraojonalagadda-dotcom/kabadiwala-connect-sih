@@ -142,6 +142,26 @@ export default function RecyclersPage() {
   return (
     <main className="min-h-screen bg-[#f7f8f4] px-5 py-6">
       <div className="mx-auto max-w-md">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => window.location.assign("/collector")}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+          >
+            ← {t("backToDashboard")}
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              await fetch("/api/auth/logout", { method: "POST" });
+              localStorage.removeItem("kabadiwala_user");
+              window.location.assign("/login");
+            }}
+            className="rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-50"
+          >
+            {t("logout")}
+          </button>
+        </div>
         <header className="mb-6">
           <p className="text-sm font-medium text-green-700">
             Kabadiwala Connect

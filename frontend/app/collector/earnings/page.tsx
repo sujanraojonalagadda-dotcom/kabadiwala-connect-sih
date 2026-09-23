@@ -113,6 +113,13 @@ export default function CollectorEarningsPage() {
   return (
     <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900">
       <div className="mx-auto max-w-4xl">
+        <button
+          type="button"
+          onClick={() => window.location.assign("/collector")}
+          className="mb-6 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+        >
+          ← {t("backToDashboard")}
+        </button>
         <p className="text-lg font-medium text-emerald-700">
           Kabadiwala Connect
         </p>
