@@ -8,9 +8,25 @@ export async function GET() {
       })
       .all();
 
+    const locations = await db.orm.public.Location.all();
+
+    const locationByUserId = new Map(
+      locations
+        .filter(
+          (location) =>
+            typeof location.userId === "string" && location.userId.length > 0,
+        )
+        .map((location) => [location.userId as string, location]),
+    );
+
+    const recyclersWithLocations = recyclers.map((recycler) => ({
+      ...recycler,
+      location: locationByUserId.get(recycler.userId) ?? null,
+    }));
+
     return Response.json({
       ok: true,
-      recyclers,
+      recyclers: recyclersWithLocations,
     });
   } catch (error) {
     console.error("GET RECYCLERS ERROR:", error);

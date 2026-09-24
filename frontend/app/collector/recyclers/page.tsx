@@ -1,8 +1,14 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 
 import { useLanguage } from "@/lib/i18n/use-language";
+
+const RecyclerMap = dynamic(
+  () => import("@/components/maps/RecyclerMap"),
+  { ssr: false },
+);
 
 import type { TranslationKey } from "@/lib/i18n/translations";
 
@@ -13,6 +19,10 @@ type Recycler = {
   verificationStatus: string;
   createdAt: string;
   updatedAt: string;
+  location: {
+    latitude: number | string;
+    longitude: number | string;
+  } | null;
 };
 
 type MaterialLot = {
@@ -43,6 +53,10 @@ export default function RecyclersPage() {
   const { t } = useLanguage();
   const [recyclers, setRecyclers] = useState<Recycler[]>([]);
   const [materialLots, setMaterialLots] = useState<MaterialLot[]>([]);
+  const [collectorLocation, setCollectorLocation] = useState<{
+    latitude: number | string;
+    longitude: number | string;
+  } | null>(null);
   const [selectedLotId, setSelectedLotId] = useState("");
   const [selectedRecyclerId, setSelectedRecyclerId] = useState("");
   const [loading, setLoading] = useState(true);
@@ -56,13 +70,16 @@ export default function RecyclersPage() {
         setLoading(true);
         setError("");
 
-        const [recyclersResponse, lotsResponse] = await Promise.all([
-          fetch("/api/recyclers"),
-          fetch("/api/material-lots"),
-        ]);
+        const [recyclersResponse, lotsResponse, locationResponse] =
+          await Promise.all([
+            fetch("/api/recyclers"),
+            fetch("/api/material-lots"),
+            fetch("/api/location"),
+          ]);
 
         const recyclersData = await recyclersResponse.json();
         const lotsData = await lotsResponse.json();
+        const locationData = await locationResponse.json();
 
         if (!recyclersResponse.ok || !recyclersData.ok) {
           throw new Error(
@@ -76,6 +93,13 @@ export default function RecyclersPage() {
           );
         }
 
+        if (!locationResponse.ok || !locationData.ok) {
+          throw new Error(
+            locationData.error || "Unable to load your saved location.",
+          );
+        }
+
+        setCollectorLocation(locationData.location ?? null);
         setRecyclers(recyclersData.recyclers);
         setMaterialLots(lotsData.materialLots);
 
@@ -120,6 +144,11 @@ export default function RecyclersPage() {
       });
 
       const data = await response.json();
+
+      if (response.status === 409) {
+        setSuccess(t("requestAlreadySent"));
+        return;
+      }
 
       if (!response.ok || !data.ok) {
         throw new Error(
@@ -256,6 +285,27 @@ export default function RecyclersPage() {
                 ))}
               </div>
             </section>
+
+            {collectorLocation ? (
+              <section className="mb-5">
+                <RecyclerMap
+                  collectorLocation={collectorLocation}
+                  recyclers={recyclers}
+                  selectedRecyclerId={selectedRecyclerId}
+                  onSelectRecycler={setSelectedRecyclerId}
+                />
+              </section>
+            ) : (
+              <section className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <h2 className="text-base font-semibold text-amber-900">
+                  Your location is not saved
+                </h2>
+                <p className="mt-1 text-sm leading-5 text-amber-800">
+                  Save your real current location from the Collector dashboard
+                  before using the recycler map.
+                </p>
+              </section>
+            )}
 
             <section className="mb-5 rounded-2xl border border-gray-200 bg-white p-4">
               <h2 className="text-base font-semibold text-gray-900">

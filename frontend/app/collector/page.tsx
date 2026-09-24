@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLanguage } from "@/lib/i18n/use-language";
 
 import VoiceButton from "@/lib/voice/VoiceButton";
+import LocationCapture from "@/lib/location/LocationCapture";
 import { syncPendingMaterialLots } from "@/lib/offline/material-lot-queue";
 
 
@@ -215,6 +216,8 @@ export default function CollectorDashboard() {
             )}
           </div>
         </section>
+
+        <LocationCapture />
 
         {/* Main Action */}
         <section className="mt-5">

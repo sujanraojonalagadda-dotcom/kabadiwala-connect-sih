@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 
+import LocationCapture from "@/lib/location/LocationCapture";
+
 type User = {
   id: string;
   phone: string;
@@ -404,6 +406,8 @@ export default function RecyclerRequestsPage() {
           Review collector material requests and submit quotes using real
           transaction data.
         </p>
+
+        <LocationCapture />
 
         {verificationStatus === "PENDING" && (
           <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
